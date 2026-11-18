@@ -25,12 +25,15 @@ components/lumen/          库：canvas / font / motion / input / settings / ui 
 components/lumen_demo/     示例页面：boot、home、clock、music、monitor、settings、about
 examples/esp32_demo/       IDF 示例工程（抽象面板接口 + 三键输入）
 tests/                     与上游的逐字节对比测试（需要 res/LUMEN 参考源码）
-tools/                     字体抽取、宿主预览、IDF 构建脚本
-docs/                      版式映射表、预览截图
+tools/                     字体抽取、宿主抓帧预览、PGM→PNG
+docs/                      接入指南（usage.md）、版式映射表（layout.md）、预览截图
 res/LUMEN/                 上游参考实现（.gitignore 忽略；仅测试需要，自行 clone）
 ```
 
 ## 3. 在 IDF 工程中使用
+
+> 完整步骤（含面板适配、按键映射、NVS 持久化、常见问题）见 **[docs/usage.md](docs/usage.md)**。
+> 下面是三步速览。
 
 1）让工程能找到组件目录：
 
@@ -76,7 +79,7 @@ while (true) {
 }
 ```
 
-### 面板接入要求
+### 面板接入要求（摘要）
 
 `flush` 收到的是 **SSD1306 页格式**：每字节 8 个纵向像素（LSB 在上），
 `index = page * 128 + x`，`bit p = page p 有变化`。三点必须遵守：
@@ -102,7 +105,7 @@ while (true) {
 ## 5. 构建验证（ESP-IDF v6.1 / esp32s3）
 
 ```
-$ python tools/idfpy_wrapper.py -C examples/esp32_demo build
+$ idf.py -C examples/esp32_demo build
 Successfully created ESP32-S3 image.
 lumen_esp32_demo.bin binary size 0x35c10 bytes. Smallest app partition is 0x100000 bytes. 0xca3f0 bytes (79%) free.
 ```
