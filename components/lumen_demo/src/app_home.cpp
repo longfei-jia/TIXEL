@@ -1,0 +1,227 @@
+// Home: spring carousel of app icons.
+//   position: CAROUSEL token (reacts on frame one)
+//   labels chain off the carousel *output* through FOLLOW (follow-through)
+//   page-dot pill = leading edge (SNAPPY) .. trailing edge (FOLLOW)
+//   fast motion leaves a dithered smear instead of strobing
+//   intro: icons fly in along quadratic Bezier arcs
+#include "lumen/icons.hpp"
+#include "lumen/math.hpp"
+#include "lumen/theme.hpp"
+#include "lumen_demo/apps.hpp"
+
+namespace demo {
+namespace {
+
+constexpr int kCount = 5;
+
+// Layout: upstream 128x64 values doubled vertically; the horizontal pitch is
+// fitted to the 128 px width so both neighbours stay visible.
+constexpr float kCy = 56.f;
+constexpr float kSpacing = 46.f;
+constexpr float kBig = 44.f;
+constexpr float kSmall = 22.f;
+constexpr float kDotGap = 12.f;
+constexpr float kLabelScale = 116.f;
+
+struct Item {
+    const char* label;
+    lumen::IconFn icon;
+    lumen::Page* (*open)();
+};
+
+const Item kItems[kCount] = {
+    {"Clock", lumen::iconClock, clockPage},
+    {"Music", lumen::iconMusic, musicPage},
+    {"Monitor", lumen::iconMonitor, monitorPage},
+    {"Settings", lumen::iconSettings, settingsPage},
+    {"About", lumen::iconAbout, aboutPage},
+};
+
+void brackets(lumen::Canvas& g, float cx, float cy, float r, float len) {
+    const float x0 = cx - r, y0 = cy - r, x1 = cx + r - 1, y1 = cy + r - 1;
+    g.hline(x0, y0, len);
+    g.vline(x0, y0, len);
+    g.hline(x1 - len + 1, y0, len);
+    g.vline(x1, y0, len);
+    g.hline(x0, y1, len);
+    g.vline(x0, y1 - len + 1, len);
+    g.hline(x1 - len + 1, y1, len);
+    g.vline(x1, y1 - len + 1, len);
+}
+
+class Home : public lumen::Page {
+public:
+    void prepare(bool withIntro) { intro_ = withIntro; }
+
+    void enter() override;
+    void resume() override { intro_ = false; }
+    bool key(const lumen::Event& e) override;
+    void update(float dt) override;
+    void render(lumen::Canvas& g) override;
+    void focus(float r[4]) override;
+    const lumen::Spring* probe(const char** label) override;
+
+private:
+    float introCurve(float delay, float dur, lumen::Curve c) const {
+        return intro_ ? lumen::curve(c, (age - delay) / dur) : 1.f;
+    }
+    void iconXy(int i, float d, float* x, float* y, float* vis) const;
+
+    int sel_ = 0;
+    bool intro_ = false, primed_ = false;
+    lumen::Spring pos_, label_, lead_, trail_, pulse_, squash_;
+    lumen::Spring act_[kCount];
+    float phase_[kCount] = {};
+};
+
+Home sHome;
+
+void Home::enter() {
+    if (primed_) return;   // keep carousel position across visits
+    primed_ = true;
+    sel_ = 0;
+    pos_.init(lumen::kMotionCarousel, 0, kSpacing);
+    label_.init(lumen::kMotionFollow, 0, kLabelScale);
+    lead_.init(lumen::kMotionSnappy, 0, kDotGap);
+    trail_.init(lumen::kMotionFollow, 0, kDotGap);
+    pulse_.init(lumen::kMotionBouncy, 0, 3);
+    squash_.init(lumen::kMotionPress, 0, kBig);
+    for (int i = 0; i < kCount; i++) {
+        act_[i].init(lumen::kMotionGentle, i == 0 ? 1.f : 0.f, 30);
+        phase_[i] = 0;
+    }
+}
+
+bool Home::key(const lumen::Event& e) {
+    if ((e.key == lumen::Key::Prev || e.key == lumen::Key::Next) && lumen::isStep(e)) {
+        const int d = e.key == lumen::Key::Prev ? -1 : 1, n = sel_ + d;
+        if (n >= 0 && n < kCount) {
+            sel_ = n;
+            pos_.set(static_cast<float>(n));
+            lead_.set(static_cast<float>(n));
+            pulse_.poke(1.f);
+            for (int i = 0; i < kCount; i++) act_[i].set(i == n ? 1.f : 0.f);
+        } else {
+            // rubber band: push past the end, the system pulls it back
+            pos_.kick(static_cast<float>(d) * 4.5f);
+            lead_.kick(static_cast<float>(d) * 3.f);
+            pulse_.poke(-1.2f);
+            ui->haptic();
+        }
+        return true;
+    }
+    if (e.key == lumen::Key::Ok && e.kind == lumen::Kind::Press) {
+        squash_.poke(0.18f);
+        ui->push(kItems[sel_].open(), lumen::Transition::Zoom);
+        return true;
+    }
+    return false;
+}
+
+void Home::focus(float r[4]) {
+    const float s = kBig + 16;
+    r[0] = lumen::kWidth / 2.f - s / 2;
+    r[1] = kCy - s / 2;
+    r[2] = s;
+    r[3] = s;
+}
+
+void Home::update(float dt) {
+    label_.set(pos_.value);   // chains
+    trail_.set(lead_.value);
+    lumen::Spring* springs[] = {&pos_, &label_, &lead_, &trail_, &pulse_, &squash_};
+    for (lumen::Spring* s : springs) s->update(dt);
+    for (int i = 0; i < kCount; i++) {
+        act_[i].update(dt);
+        phase_[i] += dt * act_[i].value;
+    }
+}
+
+void Home::iconXy(int i, float d, float* x, float* y, float* vis) const {
+    const float u = static_cast<float>(lumen::kScale);
+    const float ad = lumen::absf(d);
+    *x = lumen::kWidth / 2.f + d * kSpacing;
+    *y = kCy + lumen::minf(3.f * u, 2.f * u * ad * ad);
+    *vis = 1.f;
+    if (!intro_) return;
+    const float t = lumen::clamp01((age - 0.1f - 0.075f * static_cast<float>(lumen::absf(static_cast<float>(i - sel_)))) / 0.6f);
+    if (t >= 1) return;
+    const float side = d < 0 ? -1.f : d > 0 ? 1.f : 0.f;
+    const float q = lumen::curve(lumen::kCurveStandard, t);
+    lumen::qbez(lumen::kWidth / 2.f + side * 20 * u, static_cast<float>(lumen::kHeight) + 16 * u,
+                *x + side * 26 * u, *y - 20 * u, *x, *y, q, x, y);
+    *vis = lumen::clamp01(t * 2.5f);
+}
+
+void Home::render(lumen::Canvas& g) {
+    const float u = static_cast<float>(lumen::kScale);
+    const float sb = introCurve(0.05f, 0.4f, lumen::kCurveDecel);
+    g.offsetPush(0, -9.f * u * (1 - sb));
+    statusBar(*ui, g, 0);
+    g.offsetPop();
+
+    const float pos = pos_.value;
+    const float velPx = pos_.vel * kSpacing / 60.f;   // travel per frame
+    for (int i = 0; i < kCount; i++) {
+        const float d = static_cast<float>(i) - pos, ad = lumen::absf(d);
+        if (ad > 2.2f) continue;
+        float size = lumen::lerpf(kBig, kSmall, lumen::clamp01(ad));
+        if (i == sel_) size *= 1 - squash_.value;
+        float x, y, vis;
+        iconXy(i, d, &x, &y, &vis);
+        const float level = lumen::clamp01(1 - 0.55f * lumen::clamp01(ad)) * vis;
+        if (lumen::absf(velPx) > 1.6f && !intro_) {   // motion smear
+            g.setAlpha(level * 0.35f);
+            kItems[i].icon(g, x + velPx * 0.55f, y, size, phase_[i]);
+            g.setAlpha(level * 0.15f);
+            kItems[i].icon(g, x + velPx * 1.1f, y, size, phase_[i]);
+        }
+        g.setAlpha(level);
+        kItems[i].icon(g, x, y, size, phase_[i]);
+    }
+    g.setAlpha(1);
+
+    const float e = introCurve(0.4f, 0.5f, lumen::kCurveOvershoot);
+    if (e > 0) {
+        const float spread = 26.f + pulse_.value * 5.f + lumen::minf(6.f, lumen::absf(pos_.vel) * 2.4f);
+        brackets(g, lumen::kWidth / 2.f, kCy, spread * e * (1 - squash_.value * 0.6f), 8.f);
+    }
+
+    // labels ride the trailing `label` system and cross-dissolve
+    const float lp = label_.value, le = introCurve(0.3f, 0.45f, lumen::kCurveDecel);
+    g.setFont(lumen::theme::kUi);
+    g.clipPush(8 * u, 92, static_cast<float>(lumen::kWidth) - 16 * u, 16);
+    for (int i = 0; i < kCount; i++) {
+        const float d = static_cast<float>(i) - lp;
+        const float lvl = lumen::clamp01(1 - lumen::absf(d) * 1.25f) * le;
+        if (lumen::absf(d) > 1.2f || lvl <= 0) continue;
+        g.setAlpha(lvl);
+        g.textCenter(lumen::kWidth / 2.f + d * kLabelScale, 94 + (1 - le) * 6, kItems[i].label);
+    }
+    g.setAlpha(1);
+    g.clipPop();
+
+    const float de = introCurve(0.45f, 0.4f, lumen::kCurveDecel);
+    if (de > 0) {
+        const float x0 = lumen::kWidth / 2.f - (kCount - 1) * kDotGap / 2;
+        for (int i = 0; i < kCount; i++) g.pixel(x0 + static_cast<float>(i) * kDotGap, 120);
+        const float a = lumen::minf(lead_.value, trail_.value), b = lumen::maxf(lead_.value, trail_.value);
+        const float xa = x0 + a * kDotGap - 2 * u, xb = x0 + b * kDotGap + 2 * u;
+        g.rbox(xa + 0.5f, 118, lumen::maxf(4 * u, xb - xa), 3 * u, 1);
+    }
+}
+
+const lumen::Spring* Home::probe(const char** label) {
+    *label = "carousel  f=2.6 z=0.78 r=+1";
+    return &pos_;
+}
+
+}  // namespace
+
+lumen::Page* homePage(bool withIntro) {
+    sHome.title = "Home";
+    sHome.prepare(withIntro);   // keep the carousel position across visits
+    return &sHome;
+}
+
+}  // namespace demo
