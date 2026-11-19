@@ -25,38 +25,52 @@ components/tixel/          库：canvas / font / motion / input / settings / ui 
 examples/apps/             示例页面：boot、home、clock、music、monitor、settings、about（组件名 apps）
 tools/                     字体抽取、宿主抓帧预览、PGM→PNG
 docs/                      接入指南（usage.md）、版式映射表（layout.md）、预览截图
+tixel.cmake                子模块一行接入入口（注册 EXTRA_COMPONENT_DIRS）
+LICENSE                    AGPL-3.0
 res/LUMEN/                 参考实现源码（.gitignore 忽略；编译不需要，对照用）
 ```
 
 ## 3. 在 IDF 工程中使用
 
 > 完整步骤（含面板适配、按键映射、NVS 持久化、常见问题）见 **[docs/usage.md](docs/usage.md)**。
-> 下面是三步速览。
+> 下面是速览。
 
-1）让工程能找到组件目录：
+### 子模块方式：一行拉入，一行接入
+
+```bash
+# 在你的 IDF 工程根目录执行（不能放在 components/ 下）
+git submodule add https://gitee.com/longfei-jia/TIXEL.git third_party/TIXEL
+```
+
+工程根 `CMakeLists.txt`，在 `project()` **之前**加一行：
 
 ```cmake
-# 工程根 CMakeLists.txt
-set(TIXEL_DIR "${CMAKE_CURRENT_LIST_DIR}/path/to/TIXEL")
-set(EXTRA_COMPONENT_DIRS
-    ${TIXEL_DIR}/components      # 库：tixel
-    ${TIXEL_DIR}/examples)       # 示例页面：apps（不需要时去掉这行）
+include(third_party/TIXEL/tixel.cmake)   # 自动注册组件 tixel 与 apps
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(my_ui)
 ```
 
-> 用 git submodule 管理时，把路径换成 `third_party/TIXEL` 之类的目录（**不能放在
-> `components/` 下**），`EXTRA_COMPONENT_DIRS` 仍指向子模块里的 `components` 与
-> `examples`。完整步骤见 [docs/usage.md](docs/usage.md) 的方式 C。
-
-2）在 `main/CMakeLists.txt` 中引用：
+`main/CMakeLists.txt` 声明依赖：
 
 ```cmake
-idf_component_register(SRCS "main.cpp" INCLUDE_DIRS "." REQUIRES tixel)
-# 需要示例页面时再加 apps
+idf_component_register(SRCS "main.cpp" INCLUDE_DIRS "." REQUIRES tixel apps)
+# 只用库、不要示例页面时：REQUIRES tixel，并在 include 之前 set(TIXEL_WITH_APPS OFF)
 ```
 
-3）实现 `tixel::Port`，把硬件接进来（自由函数指针，无 std::function）：
+克隆带子模块的工程：`git clone --recursive <你的工程>`，或事后
+`git submodule update --init --recursive`。
+
+### 手动放置（不用 git）
+
+```cmake
+set(EXTRA_COMPONENT_DIRS
+    path/to/TIXEL/components      # 库：tixel
+    path/to/TIXEL/examples)       # 示例页面：apps（不需要时去掉这行）
+```
+
+### 实现 `tixel::Port`（硬件只在这里出现）
+
+自由函数指针，不用 std::function：
 
 ```cpp
 static uint32_t ms(void*) { return esp_timer_get_time() / 1000; }
@@ -71,7 +85,7 @@ port.keyLayout = tixel::KeyLayout::Three;   // 三键（UP/DOWN/ENTER），默�
 // 可选：haptic / rtcGet / settingsLoad / settingsSave / setContrast / setPower
 ```
 
-4）启动与主循环：
+### 启动与主循环
 
 ```cpp
 static tixel::Ui ui;
@@ -160,6 +174,6 @@ python tools/pgm2png.py build/preview/out build/preview/png 2
 
 ## 9. 许可
 
-- 本仓库的 C++ 实现：跟随参考实现的 AGPL-3.0（见 `res/LUMEN/LICENSE`）。
+- 本仓库的 C++ 实现：AGPL-3.0，见 [LICENSE](LICENSE)（与参考实现同一许可）。
 - 字体数据来自 u8g2（BSD-2-Clause，版权 Olikraus），仅抽取本库使用的 10 个字体数组，
   原样保留字节内容，见 `components/tixel/src/fonts_data.cpp` 与 `tools/extract_fonts.py`。

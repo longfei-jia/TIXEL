@@ -49,24 +49,31 @@ project(my_ui)
 
 ### 方式 C：git submodule（多工程复用推荐）
 
+一行拉入：
+
 ```bash
-# 不要放在 components/ 下：IDF 会把 components/ 的每个子目录当成组件，
-# 去里面找 CMakeLists.txt，而 TIXEL 根目录没有那个文件。
+# 在 IDF 工程根目录执行。不要放在 components/ 下：IDF 会把 components/ 的
+# 每个子目录当成组件去找 CMakeLists.txt，而 TIXEL 根目录没有那个文件。
 git submodule add https://gitee.com/longfei-jia/TIXEL.git third_party/TIXEL
 
-# 固定到某个版本（推荐，避免上游改动直接进入你的构建）
-git -C third_party/TIXEL checkout <tag-or-commit>
+# 固定版本（推荐，避免上游改动直接进入你的构建）
+git -C third_party/TIXEL checkout v1.0.0
 ```
 
-```cmake
-# your_project/CMakeLists.txt
-set(TIXEL_DIR "${CMAKE_CURRENT_LIST_DIR}/third_party/TIXEL")
-set(EXTRA_COMPONENT_DIRS
-    "${TIXEL_DIR}/components"      # 库：tixel
-    "${TIXEL_DIR}/examples")       # 示例页面：apps（不需要时去掉这行）
+一行接入 —— 工程根 `CMakeLists.txt`，在 `project()` **之前**：
 
+```cmake
+include(third_party/TIXEL/tixel.cmake)   # 注册组件 tixel + apps
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(my_ui)
+```
+
+`tixel.cmake` 只做一件事：把 `<TIXEL>/components` 与 `<TIXEL>/examples` 追加到
+`EXTRA_COMPONENT_DIRS`。不想要示例页面时：
+
+```cmake
+set(TIXEL_WITH_APPS OFF)
+include(third_party/TIXEL/tixel.cmake)
 ```
 
 克隆与升级：
@@ -75,7 +82,7 @@ project(my_ui)
 git clone --recursive <你的工程地址>          # 首次
 git submodule update --init --recursive      # 已经 clone 过但没带子模块
 
-cd third_party/TIXEL && git pull && cd -     # 升级 TIXEL
+cd third_party/TIXEL && git checkout v1.0.1 && cd -    # 升级到新版本
 git add third_party/TIXEL && git commit -m "bump TIXEL"
 ```
 
@@ -83,8 +90,8 @@ git add third_party/TIXEL && git commit -m "bump TIXEL"
 
 1. 子模块路径必须在 `components/` **之外** —— `third_party/`、`external/`、`lib/` 都行。
    IDF 扫 `components/` 时对每个子目录都要求有 `CMakeLists.txt`，子模块根目录没有。
-2. `EXTRA_COMPONENT_DIRS` 指向子模块里的 `components`（和可选的 `examples`），
-   **不是**子模块根目录 —— IDF 不会递归搜索组件。
+2. `include(...tixel.cmake)` 必须在 `project()` **之前**：IDF 在 `project()` 时解析组件，
+   之后再改 `EXTRA_COMPONENT_DIRS` 不生效。
 3. 工程根若用 `set(COMPONENTS ...)` 裁剪组件集，`tixel`（和 `apps`）必须列进去。
 4. 子模块里的 `res/`（参考实现源码）不随仓库分发，编译也用不到它。
 
