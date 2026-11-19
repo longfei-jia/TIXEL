@@ -2,8 +2,7 @@
 //
 // Everything is constexpr: the rasteriser and the layout read the same values,
 // and the linker can fold them. Panel geometry is overridable so the same
-// sources build for the 128x64 reference (used by the parity tests) and for
-// the 128x128 target.
+// sources build for the 128x64 reference set and for the 128x128 target.
 #pragma once
 
 #include <cstdint>

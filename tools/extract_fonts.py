@@ -23,7 +23,7 @@ FONTS = [
     ("font_mid",       "u8g2_font_logisoso28_tr",  "values, percentages"),
     ("font_big",       "u8g2_font_logisoso42_tn",  "clock digits"),
     ("font_logo",      "u8g2_font_logisoso34_tr",  "wordmark"),
-    # 128x64 reference set: lets the host tests reproduce upstream byte for byte
+    # 128x64 reference set: same fonts as the reference geometry
     ("font_ui_64",     "u8g2_font_haxrcorp4089_tr", "upstream body text"),
     ("font_tiny_64",   "u8g2_font_4x6_tr",          "upstream status text"),
     ("font_mid_64",    "u8g2_font_logisoso16_tr",   "upstream values"),

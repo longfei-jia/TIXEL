@@ -5,12 +5,11 @@ examples/*/sdkconfig
 examples/*/sdkconfig.old
 examples/*/managed_components/
 examples/*/dependencies.lock
-tests/build/
 
 # tools output
 tools/preview/build/
 
-# upstream reference checkout (tests only): clone it yourself, see README
+# upstream reference checkout: not needed to build the component, see README
 res/
 
 # captures

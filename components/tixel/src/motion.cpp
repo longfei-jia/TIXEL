@@ -1,8 +1,8 @@
 // TIXEL C++ - spring / bezier / tween.
 //
 // The tables and the integrator are transcribed from the reference
-// implementation on purpose: identical numbers keep the motion identical, and
-// the host tests diff frames against the original C library.
+// implementation on purpose: identical numbers keep the motion identical to
+// the original C library.
 #include "tixel/motion.hpp"
 
 #include "tixel/config.hpp"

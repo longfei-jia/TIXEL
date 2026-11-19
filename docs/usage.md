@@ -47,15 +47,46 @@ include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(my_ui)
 ```
 
-### 方式 C：git submodule
+### 方式 C：git submodule（多工程复用推荐）
 
 ```bash
-git submodule add <本仓库地址> components/TIXEL
-# CMakeLists.txt 中：
-set(EXTRA_COMPONENT_DIRS
-    "${CMAKE_CURRENT_LIST_DIR}/components/TIXEL/components"
-    "${CMAKE_CURRENT_LIST_DIR}/components/TIXEL/examples")
+# 不要放在 components/ 下：IDF 会把 components/ 的每个子目录当成组件，
+# 去里面找 CMakeLists.txt，而 TIXEL 根目录没有那个文件。
+git submodule add https://gitee.com/longfei-jia/TIXEL.git third_party/TIXEL
+
+# 固定到某个版本（推荐，避免上游改动直接进入你的构建）
+git -C third_party/TIXEL checkout <tag-or-commit>
 ```
+
+```cmake
+# your_project/CMakeLists.txt
+set(TIXEL_DIR "${CMAKE_CURRENT_LIST_DIR}/third_party/TIXEL")
+set(EXTRA_COMPONENT_DIRS
+    "${TIXEL_DIR}/components"      # 库：tixel
+    "${TIXEL_DIR}/examples")       # 示例页面：apps（不需要时去掉这行）
+
+include($ENV{IDF_PATH}/tools/cmake/project.cmake)
+project(my_ui)
+```
+
+克隆与升级：
+
+```bash
+git clone --recursive <你的工程地址>          # 首次
+git submodule update --init --recursive      # 已经 clone 过但没带子模块
+
+cd third_party/TIXEL && git pull && cd -     # 升级 TIXEL
+git add third_party/TIXEL && git commit -m "bump TIXEL"
+```
+
+四个要点：
+
+1. 子模块路径必须在 `components/` **之外** —— `third_party/`、`external/`、`lib/` 都行。
+   IDF 扫 `components/` 时对每个子目录都要求有 `CMakeLists.txt`，子模块根目录没有。
+2. `EXTRA_COMPONENT_DIRS` 指向子模块里的 `components`（和可选的 `examples`），
+   **不是**子模块根目录 —— IDF 不会递归搜索组件。
+3. 工程根若用 `set(COMPONENTS ...)` 裁剪组件集，`tixel`（和 `apps`）必须列进去。
+4. 子模块里的 `res/`（参考实现源码）不随仓库分发，编译也用不到它。
 
 ### 在 main 里声明依赖
 
@@ -271,7 +302,60 @@ port.haptic     = [](void*, uint16_t ms) { /* 振动马达，可选 */ };
 | 只有第一帧 | `flush` 没拷贝缓冲，或用完释放了 `fb` |
 | 闪烁 / 撕裂 | `flush` 阻塞太久；改 DMA 或减少每帧发送页数 |
 
-## 9. 从示例到产品
+## 9. 字体与 u8g2
+
+### 需要 u8g2 吗
+
+**不需要。** 组件不 include、不链接任何 u8g2 源码，也不引用 `res/`：
+
+| 你可能担心的 | 实际情况 |
+| --- | --- |
+| 要装 u8g2 才能编译？ | 不用。`idf_component_register` 里没有 `REQUIRES`，只依赖 `libm` 与 C++ 标准库 |
+| 要拷 `u8g2_fonts.c`（约 40 MB）？ | 不用。只有 10 个字体数组，已内嵌在 `components/tixel/src/fonts_data.cpp`（16 KB） |
+| 渲染要调 u8g2？ | 不用。`src/font.cpp` 自己解 u8g2 字体格式（LSB-first 位流 + run-length 字形），把水平 run 画进 canvas |
+
+字体数组的字节内容与 u8g2 原数组一致，只是不带 u8g2 的绘制代码。
+
+### 加字体 / 换字号
+
+字体是 u8g2 的二进制格式，两种来源：
+
+**1. 从 u8g2 字体库抽（仓库自带脚本）**
+
+```bash
+# u8g2_fonts.c 在 https://github.com/olikraus/u8g2 的 csrc/ 下
+python tools/extract_fonts.py /path/to/u8g2_fonts.c
+```
+
+脚本按 `tools/extract_fonts.py` 顶部的 `FONTS` 表抽取，改表即可增删字体，
+运行后重新生成 `components/tixel/src/fonts_data.cpp` 与 `include/tixel/fonts.hpp`。
+
+**2. 自己生成 u8g2 格式字体**
+
+用 u8g2 的 `tools/font/bdfconv`，把 BDF/OTF 转成 C 数组，再按 `fonts_data.cpp`
+的格式加进去（数组内容原样放入，无需转换）。
+
+### 角色绑定
+
+`components/tixel/include/tixel/theme.hpp` 按面板高度选两组字：
+
+| 角色 | 128×128 | 128×64 | 用途 |
+| --- | --- | --- | --- |
+| `kUi` | 7x13 | haxrcorp4089 | 正文、菜单项 |
+| `kTiny` | 6x12 | 4x6 | 状态栏、小标签 |
+| `kMid` | logisoso28 | logisoso16 | 数值、百分比 |
+| `kBig` | logisoso42（仅数字） | logisoso28（仅数字） | 时钟数字 |
+| `kLogo` | logisoso34 | logisoso22 | 字标 |
+
+页面只引用角色，不引用具体字体：换字体改 `theme.hpp` 一处即可，页面代码不动。
+想省 Flash 也可以删掉用不到的角色。
+
+### 许可
+
+u8g2 的字体数据是 BSD-2-Clause（版权 Olikraus），可随产品分发，
+保留版权声明即可。库本身跟随 AGPL-3.0。
+
+## 10. 从示例到产品
 
 示例（`examples/apps`）刻意保持最小：英文文案、无持久化、无网络。
 落地时通常只需要：

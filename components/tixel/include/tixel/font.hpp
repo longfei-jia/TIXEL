@@ -3,7 +3,7 @@
 // The demo builds ship u8g2 font blobs (see fonts.hpp) but not the u8g2
 // library: this class decodes that format directly and pushes horizontal runs
 // into the canvas, which is exactly what u8g2's ll_hvline hook does in the
-// reference. Host tests diff the output against u8g2 itself to keep it honest.
+// reference, so glyph placement matches it pixel for pixel.
 #pragma once
 
 #include <cstdint>

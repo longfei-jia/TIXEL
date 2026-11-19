@@ -12,10 +12,10 @@
 | --- | --- |
 | 组件 | `components/tixel`（库）+ `examples/apps`（示例页面，组件名 `apps`） |
 | 面板 | 128×128，页格式帧缓冲，16 页 / 2048 B，脏页掩码 16 bit |
-| 依赖 | 仅 libm；不依赖 u8g2（内置 u8g2 字体解码器，字体数据按需抽取） |
+| 依赖 | 仅 `libm` 与 C++ 标准库；**不 include、不链接 u8g2**（自带 u8g2 字体格式解码器，10 个字体数组内嵌 16 KB） |
 | 分配 | 零动态分配，全部静态存储；`tixel::Ui` 约 7 KB（含 3 个帧缓冲） |
 | 体积 | `libtixel.a` 51.9 KB（53,130 B，含 16 KB 字体数据）、`libapps.a` 22.3 KB（+2.9 KB data / 3.7 KB bss）；示例固件 215 KB（220,192 B） |
-| 一致性 | 与上游**逐字节**一致：`tests/parity` 329 项 + `tests/menu_parity` 15 帧，0 失败 |
+| 验证 | 开发期与参考实现做过逐字节比对（图元 329 项、菜单 15 帧）；本仓库不附测试代码 |
 | 版式 | 纵向 2×、字号取屏宽可容纳的最大值；逐页映射见 [docs/layout.md](docs/layout.md) |
 
 ## 2. 目录
@@ -23,10 +23,9 @@
 ```
 components/tixel/          库：canvas / font / motion / input / settings / ui / overlay / widgets / menu / icons
 examples/apps/             示例页面：boot、home、clock、music、monitor、settings、about（组件名 apps）
-tests/                     与参考实现的逐字节对比测试（需要 res/LUMEN 源码）
 tools/                     字体抽取、宿主抓帧预览、PGM→PNG
 docs/                      接入指南（usage.md）、版式映射表（layout.md）、预览截图
-res/LUMEN/                 参考实现源码（.gitignore 忽略；仅测试需要，自行 clone）
+res/LUMEN/                 参考实现源码（.gitignore 忽略；编译不需要，对照用）
 ```
 
 ## 3. 在 IDF 工程中使用
@@ -45,6 +44,10 @@ set(EXTRA_COMPONENT_DIRS
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(my_ui)
 ```
+
+> 用 git submodule 管理时，把路径换成 `third_party/TIXEL` 之类的目录（**不能放在
+> `components/` 下**），`EXTRA_COMPONENT_DIRS` 仍指向子模块里的 `components` 与
+> `examples`。完整步骤见 [docs/usage.md](docs/usage.md) 的方式 C。
 
 2）在 `main/CMakeLists.txt` 中引用：
 
@@ -116,31 +119,7 @@ my_ui.bin binary size 0x35c20 bytes. Smallest app partition is 0x100000 bytes. 0
 无警告。只引用本框架的工程可用 `set(COMPONENTS main tixel apps)` 裁剪组件集
 （`apps` 仅在需要示例页面时加入），不构建 mbedTLS/Wi-Fi 等无关部分。
 
-## 6. 一致性验证
-
-`tests/` 把库**按参考几何（128×64 + 参考字体）**编译，与 `res/LUMEN` 的 C 实现逐字节比较：
-
-```bash
-# 参考实现不随仓库分发，先准备源码
-git clone https://github.com/Xulijun180/LUMEN res/LUMEN
-
-cmake -S tests -B build/tests -G Ninja        # 或 -DREF_DIR=/path/to/checkout
-cmake --build build/tests
-./build/tests/parity.exe        # 329 checks, 0 failures
-./build/tests/menu_parity.exe   # 15 checks, 0 failures
-```
-
-覆盖范围：
-
-| 测试 | 内容 |
-| --- | --- |
-| `parity.cpp` | 5 种字体角色的全部字符 × 7 个 y 位置 / 边界 x；`hline/vline/box/frame/rbox/rframe/disc/ring/arc/line/capsule/poly/dotted`；裁剪与平移栈；SET/CLEAR/XOR；5 档抖动 α；`bufFade/bufBlit/bufBlitRegion`；弹簧收敛与补间中点 |
-| `menu_parity.cpp` | 菜单页 15 帧逐帧一致：进入动画、逐行下移、边界回卷、开关、选项循环、空闲 |
-
-> 一致性是**按上游几何**证明的。128×128 下改的是版式常量，不是渲染语义，
-> 所以像素级行为仍由同一套栅格化/运动代码决定。
-
-## 7. 宿主预览
+## 6. 宿主预览
 
 无需硬件即可看版式：
 
@@ -153,7 +132,7 @@ python tools/pgm2png.py build/preview/out build/preview/png 2
 截图见 `docs/preview/`。预览工具用虚拟时钟与虚拟按键跑完整导航脚本，
 并校验每一步停留在预期页面。
 
-## 8. API 速查
+## 7. API 速查
 
 | 类型 | 作用 |
 | --- | --- |
@@ -169,7 +148,7 @@ python tools/pgm2png.py build/preview/out build/preview/png 2
 | `tixel::theme::kUi / kTiny / kMid / kBig / kLogo` | 字体角色 |
 | `tixel::scaled(v)` | 参考像素 → 当前面板像素 |
 
-## 9. 已知限制
+## 8. 已知限制
 
 - **设置不持久化**：示例 port 的 `settingsLoad` 返回 `false`，接 NVS/Flash 即可。
 - **文本按字节绘制**：与上游 `u8g2_DrawStr` 行为一致；中文需改用 UTF-8 入口并换带
@@ -179,7 +158,7 @@ python tools/pgm2png.py build/preview/out build/preview/png 2
 - **示例页面为英文文案**：与上游一致，未做多语言。
 - **上游 `examples/`（29 MB STM32 工程）未纳入仓库**，只在本地作为参考。
 
-## 10. 许可
+## 9. 许可
 
 - 本仓库的 C++ 实现：跟随参考实现的 AGPL-3.0（见 `res/LUMEN/LICENSE`）。
 - 字体数据来自 u8g2（BSD-2-Clause，版权 Olikraus），仅抽取本库使用的 10 个字体数组，

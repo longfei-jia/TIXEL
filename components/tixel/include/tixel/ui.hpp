@@ -43,7 +43,7 @@ public:
     void init(const Port& port, const int32_t* defaults, int defaultCount);
     void start(Page* root);       // push root + wake
     void tick();                  // dt from port.millis
-    void step(float dt);           // explicit dt (tests / simulator)
+    void step(float dt);           // explicit dt (simulator / replay)
     bool idle() const;             // nothing moving: the port may sleep
     void post(Key key, Kind kind);
 
