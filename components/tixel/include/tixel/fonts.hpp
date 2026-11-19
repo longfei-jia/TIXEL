@@ -6,7 +6,7 @@
 namespace tixel {
 namespace fonts {
 
-extern const uint8_t font_ui[];  // u8g2_font_7x13_tr
+extern const uint8_t font_ui[];  // u8g2_font_6x12_tr
 extern const uint8_t font_tiny[];  // u8g2_font_6x12_tr
 extern const uint8_t font_mid[];  // u8g2_font_logisoso28_tr
 extern const uint8_t font_big[];  // u8g2_font_logisoso42_tn

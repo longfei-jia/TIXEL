@@ -124,8 +124,8 @@ void Marquee::draw(Canvas& canvas, float x, float y) {
 
 // ---------------------------------------------------------------- toggle
 void drawToggle(Canvas& canvas, float x, float y, float p, float vel) {
-    const float w = static_cast<float>(scaled(15));
-    const float h = static_cast<float>(scaled(9));
+    const float w = static_cast<float>(scaled(13));
+    const float h = static_cast<float>(scaled(8));
     const float pc = clamp01(p);
     canvas.setMode(Mode::Set);
     canvas.rframe(x, y, w, h, h * 0.44f);

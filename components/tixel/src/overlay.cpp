@@ -234,11 +234,13 @@ void Dialog::render(Canvas& g) {
     if (busy_ < 0.f) {
         // glyph above the centred title: at 2x type the upstream single row
         // (glyph + title + message) no longer fits the panel width
+        // The glyph is 9.5*scale tall, so the title has to start below it:
+        // at the old offsets the triangle base overlapped the first line.
         warnGlyph(g, kDialogX + kDialogW / 2.f - 5.f * static_cast<float>(kScale),
-                  static_cast<float>(kDialogY + scaled(2)));
-        g.textCenter(kDialogX + kDialogW / 2.f, static_cast<float>(kDialogY + scaled(10)), desc_.title);
+                  static_cast<float>(kDialogY + scaled(1)));
+        g.textCenter(kDialogX + kDialogW / 2.f, static_cast<float>(kDialogY + scaled(12)), desc_.title);
         g.setFont(theme::kTiny);
-        g.textCenter(kDialogX + kDialogW / 2.f, static_cast<float>(kDialogY + scaled(20)), desc_.message);
+        g.textCenter(kDialogX + kDialogW / 2.f, static_cast<float>(kDialogY + scaled(21)), desc_.message);
         g.setFont(theme::kUi);
         for (int i = 0; i < 2; i++) {
             float r[4];
@@ -390,7 +392,7 @@ void Sheet::render(Canvas& g) {
     g.dottedHLine(static_cast<float>(kWidth) / 2 - 6 * u, y + 3 * u, 13 * u, 2);
 
     // sun glyph whose rays grow with the value
-    const float sx = x0 + 11 * u, sy = y + 15 * u, v = fill_.value;
+    const float sx = x0 + 11 * u, sy = y + 21 * u, v = fill_.value;   // centred on the percentage
     g.disc(sx, sy, (2.2f + 0.8f * v) * u);
     for (int i = 0; i < 8; i++) {
         const float a = static_cast<float>(i) * kPi / 4.f;
@@ -398,10 +400,10 @@ void Sheet::render(Canvas& g) {
         g.line(sx + sinf(a) * r0, sy - cosf(a) * r0, sx + sinf(a) * r1, sy - cosf(a) * r1);
     }
     g.setFont(theme::kUi);
-    g.text(x0 + 22 * u, y + 5 * u, desc_.title);
+    g.text(x0 + 22 * u, y + 6 * u, desc_.title);
     g.setFont(theme::kMid);
     const int pw = g.textWidth("100%");
-    pct_.draw(g, x0 + w - 8 * u - static_cast<float>(pw), y + 15 * u);
+    pct_.draw(g, x0 + w - 8 * u - static_cast<float>(pw), y + 14 * u);
 
     const float bx = x0 + 8 * u + shake_.value, by = y + (kSheetH - 12 * u), bw = w - 16 * u;
     g.rframe(bx, by, bw, 7 * u, 3 * u);

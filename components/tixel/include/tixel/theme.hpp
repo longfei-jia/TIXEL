@@ -14,7 +14,7 @@ namespace tixel {
 namespace theme {
 
 #if TIXEL_PANEL_HEIGHT >= 96
-inline const Font kUi{fonts::font_ui};       // 7x13         body text
+inline const Font kUi{fonts::font_ui};       // 6x12         body text
 inline const Font kTiny{fonts::font_tiny};   // 6x12         status bar, labels
 inline const Font kMid{fonts::font_mid};     // logisoso 28  values
 inline const Font kBig{fonts::font_big};     // logisoso 42  clock digits (digits only)

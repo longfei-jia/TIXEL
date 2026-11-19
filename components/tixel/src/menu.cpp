@@ -9,11 +9,13 @@
 namespace tixel {
 namespace {
 
-constexpr int kRowH = scaled(12);
+constexpr int kRowH = scaled(10);   // 20 px: 9 px type + ~5 px breathing, matches the reference ratio
 constexpr int kTop = scaled(13);
 constexpr int kVisibleRows = (kHeight - kTop) / kRowH;
-constexpr int kCursorX = scaled(2);
-constexpr int kLabelX = scaled(6);
+constexpr int kCursorX = scaled(4);      // left edge of the jelly cursor
+constexpr int kLabelX = scaled(6);       // label text, indented further when focused
+constexpr int kFocusIndent = scaled(2);  // extra shift of the selected label
+constexpr int kCursorPad = scaled(4);    // cursor padding around the label
 constexpr int kRight = scaled(7);
 
 }  // namespace
@@ -44,7 +46,11 @@ void Menu::valueText(int i, char* out, int n) {
 float Menu::labelWidth(int i) {
     Canvas& g = ui->canvas();
     g.setFont(theme::kUi);
-    return static_cast<float>(g.textWidth(items_[i].label)) + 9.f;
+    // The box starts at kCursorX while the focused label starts at
+    // kLabelX + kFocusIndent. Cover that offset and keep the same padding on
+    // both ends, otherwise the trailing edge clips the last glyph.
+    return static_cast<float>(g.textWidth(items_[i].label)) +
+           static_cast<float>(kLabelX + kFocusIndent - kCursorX + kCursorPad);
 }
 
 void Menu::counterText(char* out) const {
@@ -175,9 +181,9 @@ void Menu::drawWidget(Canvas& g, int i, float rowY) {
     const float rx = static_cast<float>(kWidth - kRight);
     if (it->kind == MenuItemKind::Toggle) {
         if (r.busy > 0)
-            drawSpinner(g, rx - scaled(7), rowY + scaledf(4.5f), scaledf(4.5f), age, 1.8f);
+            drawSpinner(g, rx - scaled(7), rowY + scaledf(5.f), scaledf(3.5f), age, 1.8f);
         else
-            drawToggle(g, rx - scaled(15), rowY + scaledf(1.f), r.sw.value, r.sw.vel);
+            drawToggle(g, rx - scaled(13), rowY + scaledf(2.f), r.sw.value, r.sw.vel);
     } else if (it->kind == MenuItemKind::Option || it->kind == MenuItemKind::Sheet) {
         g.setFont(theme::kUi);
         const float y = rowY + static_cast<float>((kRowH - theme::kUi.lineHeight()) / 2);
@@ -206,7 +212,7 @@ void Menu::render(Canvas& g) {
         const float e = curve(kCurveDecel, (age - 0.08f - static_cast<float>(i - top_) * 0.055f) / 0.42f);
         const float dx = (1 - e) * static_cast<float>(scaled(28));
         // focus indent follows the cursor output continuously
-        const float ind = static_cast<float>(scaled(2)) * clamp01(1.f - absf(cur_.value - static_cast<float>(i)));
+        const float ind = static_cast<float>(kFocusIndent) * clamp01(1.f - absf(cur_.value - static_cast<float>(i)));
         g.setAlpha(clamp01(e * 1.3f));
         g.offsetPush(dx, 0);
         g.setFont(theme::kUi);
