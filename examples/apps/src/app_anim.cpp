@@ -34,7 +34,7 @@ void demoChrome(tixel::Canvas& g, tixel::Ui& ui, const char* name, int idx, int 
     g.setFont(tixel::theme::kUi);
     g.textCenter(64, 16, tr(ui, name));
     g.setFont(tixel::theme::kTiny);
-    char b[8];
+    char b[24];   // worst case for two ints: 11 + 1 + 11 + NUL = 24 (xtensa GCC counts ranges)
     std::snprintf(b, sizeof(b), "%d/%d", idx + 1, count);
     g.text(124 - static_cast<float>(g.textWidth(b)), 18, b);   // right-aligned inside the frame
     g.textCenter(64, 116, tr(ui, "up-down / hold=back|上下切换 · 长按返回"));
@@ -175,9 +175,9 @@ void AnimWidget::update(float dt) {
             rollReady_ = true;
         }
         rollAcc_ += dt;
-        const int v = static_cast<int>(rollAcc_ * 3.f) % 60;
-        char b[4];
-        std::snprintf(b, sizeof(b), "%02d", v);
+        const unsigned v = static_cast<unsigned>(rollAcc_ * 3.f) % 60u;
+        char b[8];
+        std::snprintf(b, sizeof(b), "%02u", v);
         roll_.set(b, 1);
         roll_.update(dt);
     }
