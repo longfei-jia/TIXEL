@@ -72,8 +72,10 @@ void statusBar(tixel::Ui& ui, tixel::Canvas& g, float y) {
     g.text(2 * tixel::kScale, y + tixel::kScale, t);
 
     const float u = static_cast<float>(tixel::kScale);
-    float x = static_cast<float>(tixel::kWidth) - 2 * u - 13 * u;
-    tixel::drawBattery(g, x, y + u, 0.72f);
+    // battery shell is 14 px wide + 1 px cap; y + 2 aligns it with the time
+    // text's glyph band (both start at the same top row)
+    float x = static_cast<float>(tixel::kWidth) - 2 * u - 15;
+    tixel::drawBattery(g, x, y + 2, 0.72f);
     x -= 10 * u;
     tixel::drawWifi(g, x, y + 3 * u, ui.setting(kSettingWifi) != 0);
     if (!ui.setting(kSettingSound)) {   // muted speaker

@@ -183,10 +183,13 @@ void drawChevron(Canvas& canvas, float x, float cy, bool right, int s) {
 }
 
 void drawBattery(Canvas& canvas, float x, float y, float level) {
-    const float u = static_cast<float>(kScale);
-    canvas.frame(x, y, 11 * u, 6 * u);
-    canvas.vline(x + 11 * u, y + 2 * u, 2 * u);
-    canvas.box(x + 2 * u, y + 2 * u, static_cast<float>(roundi(7 * level)) * u, 2 * u);
+    // Fixed 14x8 shell, matching the status-bar time text: wqy12 digits are
+    // 8 px tall, so the old u-doubled 22x12 frame read as twice that height.
+    // The fill sits 1 px inside the frame (the u-scaled offset used to leave
+    // a 3 px hollow ring around it).
+    canvas.frame(x, y, 14, 8);
+    canvas.vline(x + 14, y + 2, 4);
+    canvas.box(x + 2, y + 2, static_cast<float>(roundi(10 * level)), 4);
 }
 
 void drawWifi(Canvas& canvas, float x, float cy, bool on) {
