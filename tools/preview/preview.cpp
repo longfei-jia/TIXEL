@@ -109,7 +109,11 @@ int main(int argc, char** argv) {
     shot("boot_letters");
     seconds(0.9f);
     shot("boot_loader");
-    seconds(2.4f);   // splash hands off to home
+    seconds(0.35f);  // subtitle finishes typing
+    shot("boot_sub");
+    seconds(0.55f);  // progress bar fills
+    shot("boot_bar");
+    seconds(1.50f);  // splash hands off to home
     frames(40);
     expect("Home");
     shot("home");
@@ -202,6 +206,8 @@ int main(int argc, char** argv) {
 
     // language switch: the option cycles 中文 -> English -> 中文
     press(tixel::Key::Next);   // Language
+    frames(30);
+    shot("settings_lang");
     press(tixel::Key::Ok);
     frames(45);
     shot("settings_en");
@@ -222,6 +228,9 @@ int main(int argc, char** argv) {
     seconds(1.6f);
     shot("toast_reset");
     back();   // -> home
+    frames(5);
+    shot("home_return");   // mid-transition
+    frames(25);
     expect("Home");
 
     // about

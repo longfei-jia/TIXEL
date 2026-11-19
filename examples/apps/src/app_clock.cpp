@@ -194,9 +194,9 @@ void Clock::faceStopwatch(tixel::Canvas& g) {
 
     const float u = static_cast<float>(tixel::kScale);
     // short hints: at 2x body size the upstream long hint no longer fits
-    const char* hint = running_ ? "OK PAUSE|确定 暂停"
-                        : swTime_ > 0 ? "OK RESUME|确定 继续"
-                                      : "OK START|确定 开始";
+    const char* hint = tr(*ui, running_ ? "OK PAUSE|确定 暂停"
+                                        : swTime_ > 0 ? "OK RESUME|确定 继续"
+                                                      : "OK START|确定 开始");
     g.setFont(tixel::theme::kTiny);
     const float hw = static_cast<float>(g.textWidth(hint));
     const float total = 12 * u + hw;

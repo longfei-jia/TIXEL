@@ -92,9 +92,9 @@ void Boot::render(tixel::Canvas& g) {
         std::memcpy(buf, sub, static_cast<size_t>(kBytes));
         buf[kBytes] = 0;
         const float sx = tixel::kWidth / 2.f - static_cast<float>(g.textWidth(sub)) / 2.f;
-        const int ex = g.text(sx, ly + 5 * u, buf);
+        const int ex = g.text(sx, ly + 2 * u, buf);
         if ((k < subChars || static_cast<int>(t * 4) % 2 == 0) && t < 2.8f)
-            g.box(static_cast<float>(ex), ly + 5 * u, 3 * u, static_cast<float>(g.fontHeight()));
+            g.box(static_cast<float>(ex), ly + 2 * u, 3 * u, static_cast<float>(g.fontHeight()));
     }
     const float sh = tixel::clamp01((t - 2.05f) / 0.45f);   // diagonal glint through the letters
     if (sh > 0 && sh < 1) {

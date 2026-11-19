@@ -10,6 +10,7 @@ extern const uint8_t font_ui[];  // u8g2_font_wqy12_t_gb2312
 extern const uint8_t font_mid[];  // u8g2_font_logisoso28_tr
 extern const uint8_t font_big[];  // u8g2_font_logisoso42_tn
 extern const uint8_t font_logo[];  // u8g2_font_logisoso34_tr
+extern const uint8_t font_mark[];  // u8g2_font_logisoso18_tr
 extern const uint8_t font_ui_64[];  // u8g2_font_haxrcorp4089_tr
 extern const uint8_t font_tiny_64[];  // u8g2_font_4x6_tr
 extern const uint8_t font_mid_64[];  // u8g2_font_logisoso16_tr

@@ -96,12 +96,6 @@ void composeZoom(const TransitionState& t, float e, uint8_t* out, uint8_t* a, ui
     if (lvl > 0 && w >= 1 && h >= 1)
         bufBlitRegion(out, fg, 0, 0, static_cast<float>(kWidth), static_cast<float>(kHeight),
                       x, y, w, h, r, lvl, true);
-    if (e < 0.97f && w >= 1 && h >= 1 && t.newPage && t.newPage->ui) {
-        Canvas& c = t.newPage->ui->canvas();
-        c.reset(out);
-        c.rframe(static_cast<float>(roundi(x)), static_cast<float>(roundi(y)),
-                 static_cast<float>(roundi(w)), static_cast<float>(roundi(h)), r);
-    }
 }
 
 void composeFade(const TransitionState& t, float e, uint8_t* out, uint8_t* a, uint8_t* b) {

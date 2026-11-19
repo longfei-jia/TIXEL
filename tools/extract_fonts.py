@@ -21,7 +21,8 @@ FONTS = [
     ("font_ui",        "u8g2_font_wqy12_t_gb2312", "body text, CJK + latin"),
     ("font_mid",       "u8g2_font_logisoso28_tr",  "values, percentages"),
     ("font_big",       "u8g2_font_logisoso42_tn",  "clock digits"),
-    ("font_logo",      "u8g2_font_logisoso34_tr",  "wordmark"),
+    ("font_logo",      "u8g2_font_logisoso34_tr",  "wordmark (boot)"),
+    ("font_mark",      "u8g2_font_logisoso18_tr",  "wordmark (about)"),
     # 128x64 reference set: same fonts as the reference geometry
     ("font_ui_64",     "u8g2_font_haxrcorp4089_tr", "upstream body text"),
     ("font_tiny_64",   "u8g2_font_4x6_tr",          "upstream status text"),

@@ -10,7 +10,7 @@
 namespace tixel::apps {
 namespace {
 
-constexpr float kLogoH = 34.f;                  // logisoso34 cap height
+constexpr float kLogoH = 18.f;                  // logisoso18 cap height
 constexpr float kTagY = 12.f + kLogoH + 8.f;
 constexpr float kRow0 = kTagY + 20.f;
 constexpr float kRowH = 22.f;
@@ -78,10 +78,11 @@ void About::update(float dt) { scroll_.update(dt); }
 void About::render(tixel::Canvas& g) {
     const float u = static_cast<float>(tixel::kScale);
     g.offsetPush(0, -scroll_.value);
-    g.setFont(tixel::theme::kLogo);
+    static const tixel::Font kMark{tixel::fonts::font_mark};
+    g.setFont(kMark);
     // caps-only wordmark: its visual height is the ascent, not ascent+descent
     const float lw = static_cast<float>(g.textWidth("TIXEL")), lx = tixel::kWidth / 2.f - lw / 2;
-    const float ly = 6 * u - 20 * u * (1 - tixel::curve(tixel::kCurveOvershoot, (age - 0.1f) / 0.5f));
+    const float ly = 6 * u - 10 * u * (1 - tixel::curve(tixel::kCurveOvershoot, (age - 0.1f) / 0.5f));
     g.text(lx, ly, "TIXEL");
     float ph = age - 0.8f;
     if (ph > 0) {

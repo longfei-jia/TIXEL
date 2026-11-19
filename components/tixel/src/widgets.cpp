@@ -66,10 +66,14 @@ int Roll::width(Canvas& canvas) {
 int Roll::draw(Canvas& canvas, float x, float y) {
     canvas.setFont(font_);
     const int fh = canvas.fontHeight();
+    // A Cell holds one byte, so multi-byte values (中文) cannot roll per glyph;
+    // draw them in one go. Width already goes through textWidth().
+    for (const char* p = text_; *p; p++)
+        if ((static_cast<unsigned char>(*p) & 0x80) != 0) return canvas.text(x, y, text_);
     const float step = static_cast<float>(fh) + 2.f;
     float cx = static_cast<float>(roundi(x));
     y = static_cast<float>(roundi(y));
-    canvas.clipPush(cx - 1, y, 999, static_cast<float>(fh));
+    canvas.clipPush(cx - 1, y, 999, static_cast<float>(fh + 2));   // room for descenders
     char s[2] = {0, 0};
     for (int i = 0; i < count_; i++) {
         Cell* c = &cell_[i];
@@ -190,16 +194,19 @@ void drawWifi(Canvas& canvas, float x, float cy, bool on) {
     auto px = [&](float dx, float dy) { canvas.box(x + dx * u, cy + dy * u, u, u); };
     auto row = [&](float dx, float dy, int count) { canvas.box(x + dx * u, cy + dy * u, count * u, u); };
     px(3, 2);
-    if (!on) {
-        canvas.capsule(x + 1 * u, cy - 2 * u, x + 5 * u, cy + 2 * u, u);
-        return;
-    }
     row(2, 0, 3);
     px(1, 1);
     px(5, 1);
     row(1, -2, 5);
     px(0, -1);
     px(6, -1);
+    if (!on) {
+        // Same glyph, with a diagonal knocked out, so "off" still reads as wifi
+        // instead of a lone backslash.
+        canvas.setMode(Mode::Clear);
+        canvas.line(x - 0.5f * u, cy + 2.5f * u, x + 6.5f * u, cy - 2.5f * u);
+        canvas.setMode(Mode::Set);
+    }
 }
 
 }  // namespace tixel
