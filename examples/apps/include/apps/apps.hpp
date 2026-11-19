@@ -37,6 +37,7 @@ tixel::Page* monitorPage();
 tixel::Page* settingsPage();
 tixel::Page* aboutPage();
 tixel::Page* animPage();
+tixel::Page* parallelPage();
 
 void statusBar(tixel::Ui& ui, tixel::Canvas& g, float y);
 

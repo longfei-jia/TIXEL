@@ -319,6 +319,67 @@ const tixel::MenuItem kAnimItems[] = {
 };
 tixel::Menu sAnim("Animation", kAnimItems);
 
+// ---- parallel group: 12 tiles, one driver, all in and out together --------
+
+class AnimParallel : public tixel::Page {
+public:
+    bool key(const tixel::Event& e) override {
+        if ((e.key == tixel::Key::Prev || e.key == tixel::Key::Next) && tixel::isStep(e)) {
+            ex_ = (ex_ + (e.key == tixel::Key::Next ? 1 : -1) + 4) % 4;
+            t_ = 0;
+            s_.init(tixel::kMotionCarousel, 0.f, 1.f);
+            s_.set(0.f);
+            return true;
+        }
+        return false;
+    }
+    void enter() override { s_.init(tixel::kMotionCarousel, 0.f, 1.f); }
+    void update(float dt) override {
+        // one 4 s cycle: in (0..1.6) / hold / out (1.6..3.2) / hold
+        t_ += dt;
+        const float ph = std::fmodf(t_, 4.f);
+        s_.set(ph < 1.6f || ph >= 3.2f ? 1.f : 0.f);
+        s_.update(dt);
+    }
+    void render(tixel::Canvas& g) override;
+
+private:
+    int ex_ = 0;
+    float t_ = 0;
+    tixel::Spring s_;
+};
+
+const char* const kParallelNames[4] = {"Pop|弹出", "Slide|滑入", "Dissolve|溶解", "Scatter|散开"};
+
+AnimParallel sAnimParallel;
+
+void AnimParallel::render(tixel::Canvas& g) {
+    statusBar(*ui, g, 0);
+    demoChrome(g, *ui, kParallelNames[ex_], ex_, 4);
+    const float v = s_.value;            // spring value, overshoots on purpose
+    const float c = tixel::clamp01(v);
+
+    for (int i = 0; i < 12; i++) {
+        const float bx = 36.f + static_cast<float>(i % 4) * 24.f;
+        const float by = 48.f + static_cast<float>(i / 4) * 22.f;
+        if (ex_ == 1) {                              // slide: group enters as a sheet
+            g.rbox(bx - 8.f + (1.f - c) * 150.f, by - 8.f, 16, 16, 4);
+        } else if (ex_ == 2) {                       // dissolve: fixed grid, dither alpha
+            g.setAlpha(c);
+            g.rbox(bx - 8.f, by - 8.f, 16, 16, 4);
+        } else if (ex_ == 3) {                       // scatter: fly out from the centre
+            const float x = tixel::lerpf(64.f, bx, c);
+            const float y = tixel::lerpf(72.f, by, c);
+            const float sz = 16.f * tixel::clamp01(c * 1.2f);
+            if (sz > 0.6f) g.rbox(x - sz * 0.5f, y - sz * 0.5f, sz, sz, 3);
+        } else {                                     // pop: every tile scales together
+            const float sz = 16.f * v;
+            if (sz > 0.6f) g.rbox(bx - sz * 0.5f, by - sz * 0.5f, sz, sz, sz * 0.22f);
+        }
+    }
+    g.setAlpha(1);
+}
+
 }  // namespace
 
 tixel::Page* animPage() {
@@ -328,6 +389,11 @@ tixel::Page* animPage() {
     sAnimWidget.title = "AnimWidget";
     sAnimFrame.title = "AnimFrame";
     return &sAnim;
+}
+
+tixel::Page* parallelPage() {
+    sAnimParallel.title = "AnimParallel";
+    return &sAnimParallel;
 }
 
 }  // namespace tixel::apps

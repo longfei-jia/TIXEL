@@ -115,4 +115,15 @@ void iconMorph(Canvas& c, float cx, float cy, float s, float ph) {
     c.disc(cx, cy, maxf(1.f, s * 0.08f));
 }
 
+// Parallel group: three tiles pop in and out on one shared clock - the icon
+// states the theme (many elements, one driver) rather than showing motion.
+void iconParallel(Canvas& c, float cx, float cy, float s, float ph) {
+    const float k = 0.45f + 0.55f * (0.5f - 0.5f * cosf(ph * kTau * 0.8f));
+    const float sz = s * 0.26f * k;
+    for (int i = 0; i < 3; i++) {
+        const float x = cx + static_cast<float>(i - 1) * s * 0.3f;
+        c.rbox(x - sz * 0.5f, cy - sz * 0.5f, sz, sz, sz * 0.3f);
+    }
+}
+
 }  // namespace tixel

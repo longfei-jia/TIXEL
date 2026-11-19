@@ -16,5 +16,6 @@ void iconMonitor(Canvas& c, float cx, float cy, float s, float phase);
 void iconSettings(Canvas& c, float cx, float cy, float s, float phase);
 void iconAbout(Canvas& c, float cx, float cy, float s, float phase);
 void iconMorph(Canvas& c, float cx, float cy, float s, float phase);
+void iconParallel(Canvas& c, float cx, float cy, float s, float phase);
 
 }  // namespace tixel

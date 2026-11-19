@@ -12,7 +12,7 @@
 namespace tixel::apps {
 namespace {
 
-constexpr int kCount = 6;
+constexpr int kCount = 7;
 
 // Layout: upstream 128x64 values doubled vertically; the horizontal pitch is
 // fitted to the 128 px width so both neighbours stay visible.
@@ -36,6 +36,7 @@ const Item kItems[kCount] = {
     {"Settings|设置", tixel::iconSettings, settingsPage},
     {"About|关于", tixel::iconAbout, aboutPage},
     {"Animation|动画", tixel::iconMorph, animPage},
+    {"Parallel|并行", tixel::iconParallel, parallelPage},
 };
 
 void brackets(tixel::Canvas& g, float cx, float cy, float r, float len) {

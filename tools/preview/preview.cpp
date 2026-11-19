@@ -291,6 +291,26 @@ int main(int argc, char** argv) {
     back();                                  // -> Home
     expect("Home");
 
+    // --- parallel animations (menu item 7) ---------------------------------
+    press(tixel::Key::Next);                 // Animation -> Parallel
+    press(tixel::Key::Ok);
+    frames(40);                              // transition done, tiles settled
+    expect("AnimParallel");
+    shot("anim_parallel_pop");
+    seconds(2.0f);                           // exit finished
+    shot("anim_parallel_pop_out");
+    press(tixel::Key::Next);                 // -> slide
+    seconds(0.7f);
+    shot("anim_parallel_slide");
+    press(tixel::Key::Next);                 // -> dissolve
+    seconds(0.7f);
+    shot("anim_parallel_dissolve");
+    press(tixel::Key::Next);                 // -> scatter
+    seconds(0.7f);
+    shot("anim_parallel_scatter");
+    back();                                  // -> Home
+    expect("Home");
+
     std::printf("fps ~%.1f, frames %u, depth %u\n", gUi.fps(), gUi.frames(), gUi.depth());
     return 0;
 }
