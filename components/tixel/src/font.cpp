@@ -32,6 +32,46 @@ struct BitReader {
     }
 };
 
+// UTF-8 -> codepoint, one per call. A malformed lead byte is returned as-is so
+// the pen still advances by one byte instead of stalling.
+const char* nextCodepoint(const char* s, uint32_t* cp) {
+    const auto b0 = static_cast<uint8_t>(s[0]);
+    if (b0 < 0x80) {
+        *cp = b0;
+        return s + 1;
+    }
+    if ((b0 & 0xE0) == 0xC0) {
+        const auto b1 = static_cast<uint8_t>(s[1]);
+        if ((b1 & 0xC0) == 0x80) {
+            *cp = static_cast<uint32_t>(((b0 & 0x1Fu) << 6) | (b1 & 0x3Fu));
+            return s + 2;
+        }
+    } else if ((b0 & 0xF0) == 0xE0) {
+        const auto b1 = static_cast<uint8_t>(s[1]);
+        const auto b2 = static_cast<uint8_t>(s[2]);
+        if ((b1 & 0xC0) == 0x80 && (b2 & 0xC0) == 0x80) {
+            *cp = static_cast<uint32_t>(((b0 & 0x0Fu) << 12) | ((b1 & 0x3Fu) << 6) | (b2 & 0x3Fu));
+            return s + 3;
+        }
+    } else if ((b0 & 0xF8) == 0xF0) {
+        const auto b1 = static_cast<uint8_t>(s[1]);
+        const auto b2 = static_cast<uint8_t>(s[2]);
+        const auto b3 = static_cast<uint8_t>(s[3]);
+        if ((b1 & 0xC0) == 0x80 && (b2 & 0xC0) == 0x80 && (b3 & 0xC0) == 0x80) {
+            *cp = static_cast<uint32_t>(((b0 & 0x07u) << 18) | ((b1 & 0x3Fu) << 12) |
+                                        ((b2 & 0x3Fu) << 6) | (b3 & 0x3Fu));
+            return s + 4;
+        }
+    }
+    *cp = b0;
+    return s + 1;
+}
+
+// Advance used for a codepoint the font has no glyph for. Keeps mixed text from
+// collapsing onto itself; half-width for latin, full-width for CJK.
+constexpr int kFallbackHalf = 6;
+constexpr int kFallbackFull = 12;
+
 }  // namespace
 
 const uint8_t* Font::findGlyph(uint32_t codepoint) const {
@@ -93,12 +133,20 @@ int Font::advance(uint32_t codepoint) const {
     return glyph(codepoint, g) ? g.advance : 0;
 }
 
-// Byte-at-a-time, i.e. u8x8_ascii_next(): this is what u8g2_DrawStr does, and
-// what the reference text path uses. CJK would need a UTF-8 variant + a font
-// with a unicode index table.
+// UTF-8 text, so GB2312 CJK and half-width latin can share one line. The font
+// needs a unicode index table for codepoints above 255 (see findGlyph).
 int Font::width(const char* s) const {
     int w = 0;
-    for (; *s; s++) w += advance(static_cast<uint8_t>(*s));
+    while (*s) {
+        uint32_t cp;
+        s = nextCodepoint(s, &cp);
+        Glyph g;
+        if (glyph(cp, g)) {
+            w += g.advance;
+        } else {
+            w += cp < 0x80 ? kFallbackHalf : kFallbackFull;
+        }
+    }
     return w;
 }
 
@@ -111,9 +159,14 @@ int Font::draw(Canvas& canvas, int x, int y, const char* s) const {
     const int vref = ascent() + 1;   // u8g2 font position "top"
 
     int pen = x;
-    for (; *s; s++) {
+    while (*s) {
+        uint32_t cp;
+        s = nextCodepoint(s, &cp);
         Glyph g;
-        if (!glyph(static_cast<uint8_t>(*s), g)) continue;
+        if (!glyph(cp, g)) {
+            pen += cp < 0x80 ? kFallbackHalf : kFallbackFull;   // missing glyph
+            continue;
+        }
         if (g.width > 0) {
             BitReader br{g.data, 0};
             (void)br.read(bitsWidth);

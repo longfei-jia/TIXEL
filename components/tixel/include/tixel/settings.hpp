@@ -18,6 +18,7 @@ enum SettingId : int {
     kSettingAutosleep,        // seconds, 0 = never
     kSettingMotion,           // animation speed, % (100 = normal)
     kSettingVibrate,          // 0/1
+    kSettingLanguage,         // 0 = 中文, 1 = English (UI text only)
     kSettingUser              // first app-defined id
 };
 

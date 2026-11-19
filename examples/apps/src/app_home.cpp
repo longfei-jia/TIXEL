@@ -30,11 +30,11 @@ struct Item {
 };
 
 const Item kItems[kCount] = {
-    {"Clock", tixel::iconClock, clockPage},
-    {"Music", tixel::iconMusic, musicPage},
-    {"Monitor", tixel::iconMonitor, monitorPage},
-    {"Settings", tixel::iconSettings, settingsPage},
-    {"About", tixel::iconAbout, aboutPage},
+    {"Clock|时钟", tixel::iconClock, clockPage},
+    {"Music|音乐", tixel::iconMusic, musicPage},
+    {"Monitor|监视器", tixel::iconMonitor, monitorPage},
+    {"Settings|设置", tixel::iconSettings, settingsPage},
+    {"About|关于", tixel::iconAbout, aboutPage},
 };
 
 void brackets(tixel::Canvas& g, float cx, float cy, float r, float len) {
@@ -196,7 +196,8 @@ void Home::render(tixel::Canvas& g) {
         const float lvl = tixel::clamp01(1 - tixel::absf(d) * 1.25f) * le;
         if (tixel::absf(d) > 1.2f || lvl <= 0) continue;
         g.setAlpha(lvl);
-        g.textCenter(tixel::kWidth / 2.f + d * kLabelScale, 94 + (1 - le) * 6, kItems[i].label);
+        g.textCenter(tixel::kWidth / 2.f + d * kLabelScale, 94 + (1 - le) * 6,
+                     tr(*ui, kItems[i].label));
     }
     g.setAlpha(1);
     g.clipPop();

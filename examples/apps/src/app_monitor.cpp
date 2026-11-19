@@ -19,12 +19,14 @@ constexpr int kPoints = 34;
 constexpr float kStep = 4.f;
 constexpr float kSample = 0.25f;
 constexpr int kTabs = 3;
-const char* kTabNames[kTabs] = {"CPU", "RAM", "TEMP"};
+const char* kTabNames[kTabs] = {"CPU", "RAM|内存", "TEMP|温度"};
 
-constexpr float kGraphTop = 48.f;
-constexpr float kGraphH = 76.f;
-constexpr float kTabsY = 30.f;
-constexpr float kUnderlineY = 43.f;
+// The 42 px value glyph reaches y=36, so the tab row starts below it; Chinese
+// labels are taller than the latin ones this used to be tuned for.
+constexpr float kGraphTop = 53.f;
+constexpr float kGraphH = 71.f;
+constexpr float kTabsY = 38.f;
+constexpr float kUnderlineY = 49.f;
 
 class Monitor : public tixel::Page {
 public:
@@ -74,13 +76,14 @@ void Monitor::format(char* b, float v) {
 float Monitor::tabX(tixel::Canvas& g, int i) {
     g.setFont(tixel::theme::kTiny);
     float x = 6;
-    for (int j = 0; j < i; j++) x += static_cast<float>(g.textWidth(kTabNames[j])) + 14;
+    for (int j = 0; j < i; j++) x += static_cast<float>(g.textWidth(tr(*ui, kTabNames[j]))) + 14;
     return x;
 }
 
 void Monitor::placeUnderline(bool snap) {
     tixel::Canvas& g = ui->canvas();
-    const float x = tabX(g, tab_) - 2, w = static_cast<float>(g.textWidth(kTabNames[tab_])) + 4;
+    const float x = tabX(g, tab_) - 2,
+                w = static_cast<float>(g.textWidth(tr(*ui, kTabNames[tab_]))) + 4;
     if (snap) {
         ulX_.snap(x);
         ulW_.snap(w);
@@ -184,7 +187,7 @@ void Monitor::update(float dt) {
 
 void Monitor::render(tixel::Canvas& g) {
     g.setFont(tixel::theme::kTiny);
-    for (int i = 0; i < kTabs; i++) g.text(tabX(g, i), kTabsY, kTabNames[i]);
+    for (int i = 0; i < kTabs; i++) g.text(tabX(g, i), kTabsY, tr(*ui, kTabNames[i]));
     g.box(ulX_.value, kUnderlineY, ulW_.value, 2);
     const float vx = static_cast<float>(tixel::kWidth - 6) - static_cast<float>(value_.width(g));
     value_.draw(g, vx, 0);
@@ -229,7 +232,7 @@ void Monitor::render(tixel::Canvas& g) {
         g.rbox(tixel::kWidth / 2.f - bw / 2, by, bw, 20, 6);
         g.setMode(tixel::Mode::Clear);
         g.setFont(tixel::theme::kTiny);
-        g.textCenter(tixel::kWidth / 2.f + 0.5f, by + 5, "PAUSED");
+        g.textCenter(tixel::kWidth / 2.f + 0.5f, by + 5, tr(*ui, "PAUSED|已暂停"));
         g.setMode(tixel::Mode::Set);
     }
 }

@@ -199,6 +199,16 @@ int main(int argc, char** argv) {
     frames(45);
     back();                    // -> settings
     expect("Settings");
+
+    // language switch: the option cycles 中文 -> English -> 中文
+    press(tixel::Key::Next);   // Language
+    press(tixel::Key::Ok);
+    frames(45);
+    shot("settings_en");
+    press(tixel::Key::Ok);
+    frames(45);
+    shot("settings_zh");
+
     press(tixel::Key::Next);   // Reset
     press(tixel::Key::Ok);
     frames(45);

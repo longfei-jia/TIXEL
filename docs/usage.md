@@ -318,10 +318,43 @@ port.haptic     = [](void*, uint16_t ms) { /* 振动马达，可选 */ };
 | 你可能担心的 | 实际情况 |
 | --- | --- |
 | 要装 u8g2 才能编译？ | 不用。`idf_component_register` 里没有 `REQUIRES`，只依赖 `libm` 与 C++ 标准库 |
-| 要拷 `u8g2_fonts.c`（约 40 MB）？ | 不用。只有 10 个字体数组，已内嵌在 `components/tixel/src/fonts_data.cpp`（16 KB） |
+| 要拷 `u8g2_fonts.c`（约 40 MB）？ | 不用。只内嵌 9 个字体数组在 `components/tixel/src/fonts_data.cpp`（约 200 KB，含中文字库） |
 | 渲染要调 u8g2？ | 不用。`src/font.cpp` 自己解 u8g2 字体格式（LSB-first 位流 + run-length 字形），把水平 run 画进 canvas |
 
 字体数组的字节内容与 u8g2 原数组一致，只是不带 u8g2 的绘制代码。
+
+### 中文与多语言
+
+正文用的是 `u8g2_font_wqy12_t_gb2312`（文泉驿点阵宋体，198 KB）：汉字全宽 12 px、
+拉丁半宽 6 px，中英混排时基线对齐。覆盖 GB2312 全部字符，常见中文页面不需要额外处理。
+
+文本层已经按 UTF-8 解码（`src/font.cpp` 的 `nextCodepoint`），所以：
+
+```cpp
+g.text(x, y, "亮度调节");        // 直接写 UTF-8 字面量
+g.textWidth("自动休眠 30 秒");   // 宽度按 codepoint 累加，中英混排正确
+```
+
+**语言切换**由 `kSettingLanguage`（框架设置，0 = 中文 / 1 = English）驱动，
+文案写成 `"English|中文"` 两段，渲染时取对应的一半：
+
+```cpp
+// Menu 的行标签、标题、选项值自动处理
+TIXEL_ITEM_TOGGLE("Sound|声音", kSettingSound);
+tixel::Menu m("Settings", kItems);
+m.setTitleText("Settings|设置");
+
+// 页面里其它字符串用 apps 层的 tr()，slot 用于同时存活的多个字符串
+g.textCenter(cx, y, tr(*ui, "PAUSED|已暂停"));
+d.buttons[0] = tr(*ui, "Cancel|取消", 2);
+d.buttons[1] = tr(*ui, "Reset|重置", 3);
+```
+
+切语言后菜单会自动重算光标框宽度（`Menu::update` 里检测设置变化），
+页面文案每帧重新读取，不需要重建页面。
+
+> 缺字处理：`Font::draw` 遇到字库没有的 codepoint 会跳过并按半角/全角给出推进量，
+> 所以是"空白占位"而不是整行错位。要显示 GB2312 之外的生僻字，换更大的字库。
 
 ### 加字体 / 换字号
 

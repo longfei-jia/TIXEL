@@ -34,7 +34,7 @@ void Menu::valueText(int i, char* out, int n) {
         const int32_t value = ui->setting(it->setting);
         for (int k = 0; k < it->optionCount; k++)
             if (it->options[k].value == value) {
-                std::snprintf(out, static_cast<size_t>(n), "%s", it->options[k].label);
+                std::snprintf(out, static_cast<size_t>(n), "%s", lang(it->options[k].label));
                 return;
             }
         std::snprintf(out, static_cast<size_t>(n), "%d", static_cast<int>(value));
@@ -43,13 +43,27 @@ void Menu::valueText(int i, char* out, int n) {
     }
 }
 
+// "English|中文" -> the half for the current UI language. Latin half is copied
+// into langBuf_ because it is a prefix of the literal, not a separate string.
+const char* Menu::lang(const char* text) const {
+    const char* bar = text;
+    while (*bar && *bar != '|') bar++;
+    if (*bar != '|') return text;
+    if (!ui || ui->setting(kSettingLanguage) == 0) return bar + 1;
+    size_t len = static_cast<size_t>(bar - text);
+    if (len > sizeof(langBuf_) - 1) len = sizeof(langBuf_) - 1;
+    std::memcpy(langBuf_, text, len);
+    langBuf_[len] = 0;
+    return langBuf_;
+}
+
 float Menu::labelWidth(int i) {
     Canvas& g = ui->canvas();
     g.setFont(theme::kUi);
     // The box starts at kCursorX while the focused label starts at
     // kLabelX + kFocusIndent. Cover that offset and keep the same padding on
     // both ends, otherwise the trailing edge clips the last glyph.
-    return static_cast<float>(g.textWidth(items_[i].label)) +
+    return static_cast<float>(g.textWidth(lang(items_[i].label))) +
            static_cast<float>(kLabelX + kFocusIndent - kCursorX + kCursorPad);
 }
 
@@ -147,6 +161,14 @@ bool Menu::key(const Event& e) {
 }
 
 void Menu::update(float dt) {
+    // Switching the UI language changes the label, so the cursor width has to
+    // be re-measured - otherwise the box keeps the old language's size and
+    // clips the longer one.
+    const int32_t lang = ui ? ui->setting(kSettingLanguage) : 0;
+    if (lang != langSeen_) {
+        langSeen_ = lang;
+        curW_.set(labelWidth(sel_));
+    }
     trail_.set(cur_.value);   // chain: trail follows the output
     cur_.update(dt);
     trail_.update(dt);
@@ -197,7 +219,7 @@ void Menu::render(Canvas& g) {
     // title bar
     drawChevron(g, scaled(3), scaledf(5.f), false, scaled(2));
     g.setFont(theme::kUi);
-    g.text(scaled(10), scaled(1), title);
+    g.text(scaled(10), scaled(1), lang(titleText_ ? titleText_ : title));
     g.setFont(theme::kTiny);
     counter_.draw(g, static_cast<float>(kWidth - scaled(3) - counter_.width(g)), scaled(3));
     g.dottedHLine(0, scaled(11), static_cast<float>(kWidth), 2);
@@ -217,7 +239,7 @@ void Menu::render(Canvas& g) {
         g.offsetPush(dx, 0);
         g.setFont(theme::kUi);
         g.text(static_cast<float>(kLabelX) + ind, ry + static_cast<float>((kRowH - fontH) / 2),
-               items_[i].label);
+               lang(items_[i].label));
         drawWidget(g, i, ry);
         g.offsetPop();
         g.setAlpha(1.f);

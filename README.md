@@ -12,9 +12,9 @@
 | --- | --- |
 | 组件 | `components/tixel`（库）+ `examples/apps`（示例页面，组件名 `apps`） |
 | 面板 | 128×128，页格式帧缓冲，16 页 / 2048 B，脏页掩码 16 bit |
-| 依赖 | 仅 `libm` 与 C++ 标准库；**不 include、不链接 u8g2**（自带 u8g2 字体格式解码器，10 个字体数组内嵌 16 KB） |
+| 依赖 | 仅 `libm` 与 C++ 标准库；**不 include、不链接 u8g2**（自带 u8g2 字体格式解码器，9 个字体数组内嵌约 200 KB，含 GB2312 字库） |
 | 分配 | 零动态分配，全部静态存储；`tixel::Ui` 约 7 KB（含 3 个帧缓冲） |
-| 体积 | `libtixel.a` 51.9 KB（53,130 B，含 16 KB 字体数据）、`libapps.a` 22.3 KB（+2.9 KB data / 3.7 KB bss）；示例固件 215 KB（220,192 B） |
+| 体积 | `libtixel.a` 248 KB（253,760 B，其中 198 KB 是 GB2312 字库）、`libapps.a` 23.5 KB（+2.9 KB data / 4.1 KB bss）；示例固件 399 KB（408,176 B），1 MB 分区余 61% |
 | 验证 | 开发期与参考实现做过逐字节比对（图元 329 项、菜单 15 帧）；本仓库不附测试代码 |
 | 版式 | 纵向 2×、字号取屏宽可容纳的最大值；逐页映射见 [docs/layout.md](docs/layout.md) |
 
@@ -165,11 +165,12 @@ python tools/pgm2png.py build/preview/out build/preview/png 2
 ## 8. 已知限制
 
 - **设置不持久化**：示例 port 的 `settingsLoad` 返回 `false`，接 NVS/Flash 即可。
-- **文本按字节绘制**：与上游 `u8g2_DrawStr` 行为一致；中文需改用 UTF-8 入口并换带
-  unicode 索引的字体（`Font` 已实现 unicode 查找，文本迭代目前是字节语义）。
 - **面板尺寸为编译期常量**：`TIXEL_PANEL_WIDTH/HEIGHT` 可覆盖，但更换高度后需按
   `docs/layout.md` 复核版式；当前只在 128×128（默认）与 128×64（测试）上验证。
-- **示例页面为英文文案**：与上游一致，未做多语言。
+- **中文字库占 198 KB**：`wqy12_t_gb2312` 覆盖全部 GB2312。1 MB app 分区下
+  固件约 430 KB，仍有余量；若要压体积，用 `tools/extract_fonts.py` 换小号子集字体。
+- **语言在设置里切换**：`kSettingLanguage`（0 = 中文，1 = English），文案写成
+  `"English|中文"`，`Menu` 与 `apps::tr()` 渲染时取对应一半。
 - **上游 `examples/`（29 MB STM32 工程）未纳入仓库**，只在本地作为参考。
 
 ## 9. 许可

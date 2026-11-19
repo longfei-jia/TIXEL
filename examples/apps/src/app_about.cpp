@@ -36,8 +36,10 @@ private:
 About sAbout;
 
 void About::row(int i, const char** key, char* value, int n) {
-    static const char* keys[kRows] = {"Display", "Buffer", "Refresh", "Motion", "Uptime", "Stack", "Core RAM"};
-    *key = keys[i];
+    static const char* keys[kRows] = {"Display|显示", "Buffer|缓冲", "Refresh|刷新",
+                                     "Motion|动效", "Uptime|运行", "Stack|栈",
+                                     "Core RAM|内存"};
+    *key = tr(*ui, keys[i]);
     const uint32_t up = ui->ms() / 1000;
     switch (i) {
         case 0: std::snprintf(value, static_cast<size_t>(n), "128x128"); break;

@@ -18,8 +18,7 @@ OUT_HPP = os.path.join(ROOT, "components", "tixel", "include", "tixel", "fonts.h
 
 # symbol -> (u8g2 font name, role comment)
 FONTS = [
-    ("font_ui",        "u8g2_font_6x12_tr",        "body text, 128x128"),
-    ("font_tiny",      "u8g2_font_6x12_tr",        "status bar, labels"),
+    ("font_ui",        "u8g2_font_wqy12_t_gb2312", "body text, CJK + latin"),
     ("font_mid",       "u8g2_font_logisoso28_tr",  "values, percentages"),
     ("font_big",       "u8g2_font_logisoso42_tn",  "clock digits"),
     ("font_logo",      "u8g2_font_logisoso34_tr",  "wordmark"),

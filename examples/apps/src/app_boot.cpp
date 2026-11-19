@@ -14,7 +14,7 @@ namespace {
 constexpr float kBootSpeed = 0.8f;
 constexpr float kDoneAt = 3.35f;
 const char kWord[] = "TIXEL";
-const char kSub[] = "MOTION UI FRAMEWORK";
+const char kSub[] = "MOTION UI FRAMEWORK|动效 UI 框架";
 
 class Boot : public tixel::Page {
 public:
@@ -83,14 +83,17 @@ void Boot::render(tixel::Canvas& g) {
                 static_cast<float>(total) * ul);
     if (t > 1.6f) {
         g.setFont(tixel::theme::kTiny);
-        const int k = static_cast<int>(tixel::clamp01((t - 1.65f) / 0.55f) *
-                                       static_cast<float>(sizeof(kSub) - 1));
-        char buf[sizeof(kSub)];
-        std::memcpy(buf, kSub, static_cast<size_t>(k));
-        buf[k] = 0;
-        const float sx = tixel::kWidth / 2.f - static_cast<float>(g.textWidth(kSub)) / 2.f;
+        // Reveal by codepoint, not byte: half a Chinese glyph looks like noise.
+        const char* sub = tr(*ui, kSub);
+        const int subChars = utf8Count(sub);
+        const int k = static_cast<int>(tixel::clamp01((t - 1.65f) / 0.55f) * static_cast<float>(subChars));
+        const int kBytes = utf8BytesFor(sub, k);
+        char buf[64];
+        std::memcpy(buf, sub, static_cast<size_t>(kBytes));
+        buf[kBytes] = 0;
+        const float sx = tixel::kWidth / 2.f - static_cast<float>(g.textWidth(sub)) / 2.f;
         const int ex = g.text(sx, ly + 5 * u, buf);
-        if ((k < static_cast<int>(sizeof(kSub) - 1) || static_cast<int>(t * 4) % 2 == 0) && t < 2.8f)
+        if ((k < subChars || static_cast<int>(t * 4) % 2 == 0) && t < 2.8f)
             g.box(static_cast<float>(ex), ly + 5 * u, 3 * u, static_cast<float>(g.fontHeight()));
     }
     const float sh = tixel::clamp01((t - 2.05f) / 0.45f);   // diagonal glint through the letters

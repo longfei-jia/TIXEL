@@ -14,8 +14,11 @@ namespace tixel {
 namespace theme {
 
 #if TIXEL_PANEL_HEIGHT >= 96
-inline const Font kUi{fonts::font_ui};       // 6x12         body text
-inline const Font kTiny{fonts::font_tiny};   // 6x12         status bar, labels
+// One CJK-capable face serves both roles: the WenQuanYi 12 px bitmap covers
+// GB2312 and half-width latin, so mixed 中文/English lines line up without a
+// second font. kTiny is kept as a role so a product can still split them.
+inline const Font kUi{fonts::font_ui};       // wqy12        CJK + latin
+inline const Font kTiny{fonts::font_ui};     // wqy12        same face, its own role
 inline const Font kMid{fonts::font_mid};     // logisoso 28  values
 inline const Font kBig{fonts::font_big};     // logisoso 42  clock digits (digits only)
 inline const Font kLogo{fonts::font_logo};   // logisoso 34  wordmark

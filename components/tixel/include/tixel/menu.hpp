@@ -78,6 +78,9 @@ public:
     }
     void set(const char* title, const MenuItem* items, int count);
 
+    // Localized header text, e.g. "Settings|设置".
+    void setTitleText(const char* t) { titleText_ = t; }
+
     void enter() override;
     bool key(const Event& e) override;
     void update(float dt) override;
@@ -95,6 +98,10 @@ private:
         float busy = 0.f;
     };
 
+    // Labels and option texts may be written "English|中文". The half that
+    // matches kSettingLanguage is rendered; a string without '|' is used as-is.
+    const char* lang(const char* text) const;
+
     const MenuItem* item(int i) const { return &items_[i]; }
     void valueText(int i, char* out, int n);
     float labelWidth(int i);
@@ -104,10 +111,15 @@ private:
     void drawWidget(Canvas& canvas, int i, float rowY);
 
     const MenuItem* items_ = nullptr;
+    // Optional localized title for the header. Page::title stays the plain
+    // identifier (used by tooling), this is what gets rendered.
+    const char* titleText_ = nullptr;
+    int32_t langSeen_ = -1;   // last kSettingLanguage value, to re-measure on switch
     uint8_t count_ = 0, sel_ = 0, top_ = 0;
     Spring cur_, trail_, curW_, scroll_, press_;
     Roll counter_;
     Row rows_[kMenuMaxItems] = {};
+    mutable char langBuf_[48] = {};   // reused for the latin half of a label
 };
 
 }  // namespace tixel

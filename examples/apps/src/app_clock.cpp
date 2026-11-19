@@ -13,9 +13,11 @@
 namespace tixel::apps {
 namespace {
 
-const char* kDays[] = {"MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"};
-const char* kMonths[] = {"JAN", "FEB", "MAR", "APR", "MAY", "JUN",
-                         "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"};
+const char* kDays[] = {"MON|周一", "TUE|周二", "WED|周三", "THU|周四",
+                       "FRI|周五", "SAT|周六", "SUN|周日"};
+const char* kMonths[] = {"JAN|1月", "FEB|2月", "MAR|3月", "APR|4月",
+                         "MAY|5月", "JUN|6月", "JUL|7月", "AUG|8月",
+                         "SEP|9月", "OCT|10月", "NOV|11月", "DEC|12月"};
 
 void two(char* b, int v) {
     const unsigned u = static_cast<unsigned>(v < 0 ? 0 : v) % 100u;
@@ -151,7 +153,8 @@ void Clock::faceClock(tixel::Canvas& g) {
     tixel::DateTime n;
     ui->now(&n);
     char date[16];
-    std::snprintf(date, sizeof(date), "%s %02d %s", kDays[n.wday % 7], n.day, kMonths[(n.month + 11) % 12]);
+    std::snprintf(date, sizeof(date), "%s %02d %s", tr(*ui, kDays[n.wday % 7], 0), n.day,
+                  tr(*ui, kMonths[(n.month + 11) % 12], 1));
     g.setFont(tixel::theme::kTiny);
     g.textCenter(tixel::kWidth / 2.f, 6, date);
 
@@ -180,7 +183,7 @@ void Clock::faceClock(tixel::Canvas& g) {
 
 void Clock::faceStopwatch(tixel::Canvas& g) {
     g.setFont(tixel::theme::kTiny);
-    g.textCenter(tixel::kWidth / 2.f, 6, "STOPWATCH");
+    g.textCenter(tixel::kWidth / 2.f, 6, tr(*ui, "STOPWATCH|秒表"));
     bigHm(g, swM_, swS_, 24, 1.f);
 
     char cs[4];
@@ -191,7 +194,9 @@ void Clock::faceStopwatch(tixel::Canvas& g) {
 
     const float u = static_cast<float>(tixel::kScale);
     // short hints: at 2x body size the upstream long hint no longer fits
-    const char* hint = running_ ? "OK PAUSE" : swTime_ > 0 ? "OK RESUME" : "OK START";
+    const char* hint = running_ ? "OK PAUSE|确定 暂停"
+                        : swTime_ > 0 ? "OK RESUME|确定 继续"
+                                      : "OK START|确定 开始";
     g.setFont(tixel::theme::kTiny);
     const float hw = static_cast<float>(g.textWidth(hint));
     const float total = 12 * u + hw;
