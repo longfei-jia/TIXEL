@@ -57,7 +57,7 @@ project(my_ui)
 git submodule add https://gitee.com/longfei-jia/TIXEL.git third_party/TIXEL
 
 # 固定版本（推荐，避免上游改动直接进入你的构建）
-git -C third_party/TIXEL checkout v1.0.0
+git -C third_party/TIXEL checkout v1.1.0
 ```
 
 一行接入 —— 工程根 `CMakeLists.txt`，在 `project()` **之前**：
@@ -82,7 +82,7 @@ include(third_party/TIXEL/tixel.cmake)
 git clone --recursive <你的工程地址>          # 首次
 git submodule update --init --recursive      # 已经 clone 过但没带子模块
 
-cd third_party/TIXEL && git checkout v1.0.1 && cd -    # 升级到新版本
+cd third_party/TIXEL && git checkout v1.1.0 && cd -    # 升级到新版本
 git add third_party/TIXEL && git commit -m "bump TIXEL"
 ```
 
