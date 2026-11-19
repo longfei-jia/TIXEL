@@ -25,8 +25,8 @@
 your_project/
 ├── CMakeLists.txt
 ├── components/
-│   ├── tixel/          # 从本仓库复制
-│   └── tixel_demo/     # 可选：示例页面
+│   ├── tixel/          # 库，从本仓库 components/tixel 复制
+│   └── apps/           # 可选：示例页面，从本仓库 examples/apps 复制
 └── main/
 ```
 
@@ -38,7 +38,10 @@ ESP-IDF 会自动发现 `components/` 下的组件，无需改 CMake。
 # your_project/CMakeLists.txt
 cmake_minimum_required(VERSION 3.16)
 
-set(EXTRA_COMPONENT_DIRS "E:/path/to/TIXEL/components")   # 指向本仓库 components
+set(TIXEL_DIR "E:/path/to/TIXEL")
+set(EXTRA_COMPONENT_DIRS
+    "${TIXEL_DIR}/components"      # 库：tixel
+    "${TIXEL_DIR}/examples")       # 示例页面：apps（不需要时去掉这行）
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(my_ui)
@@ -49,7 +52,9 @@ project(my_ui)
 ```bash
 git submodule add <本仓库地址> components/TIXEL
 # CMakeLists.txt 中：
-set(EXTRA_COMPONENT_DIRS "${CMAKE_CURRENT_LIST_DIR}/components/TIXEL/components")
+set(EXTRA_COMPONENT_DIRS
+    "${CMAKE_CURRENT_LIST_DIR}/components/TIXEL/components"
+    "${CMAKE_CURRENT_LIST_DIR}/components/TIXEL/examples")
 ```
 
 ### 在 main 里声明依赖
@@ -60,12 +65,12 @@ idf_component_register(
     SRCS "main.cpp"
     INCLUDE_DIRS "."
     REQUIRES tixel            # 只用库
-    # REQUIRES tixel tixel_demo  # 需要示例页面时
+    # REQUIRES tixel apps     # 需要示例页面时
 )
 ```
 
-> IDS v6 若在工程根用了 `set(COMPONENTS ...)` 裁剪组件集，记得把
-> `tixel` / `tixel_demo` 和 port 里用到的组件（`esp_timer`、`esp_driver_gpio` 等）
+> ESP-IDF v6 若在工程根用了 `set(COMPONENTS ...)` 裁剪组件集，记得把
+> `tixel` / `apps` 和 port 里用到的组件（`esp_timer`、`esp_driver_gpio` 等）
 > 一并列出。
 
 ## 2. 最小可运行程序
@@ -76,7 +81,7 @@ idf_component_register(
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "tixel/ui.hpp"
-#include "tixel_demo/apps.hpp"      // 只用库时可删
+#include "apps/apps.hpp"      // 只用库时可删
 
 static tixel::Ui sUi;
 
@@ -86,8 +91,8 @@ extern "C" void app_main() {
     port.readKeys = [](void*) -> uint8_t  { return 0; };        // 见第 4 节
     port.flush    = [](void*, const uint8_t* fb, uint16_t pages) { /* 见第 3 节 */ };
 
-    sUi.init(port, demo::kDefaults, demo::kSettingCount);       // 自己写页面时传 nullptr, 0
-    demo::start(sUi);                                            // 或 sUi.start(&myRootPage);
+    sUi.init(port, tixel::apps::kDefaults, tixel::apps::kSettingCount);       // 自己写页面时传 nullptr, 0
+    tixel::apps::start(sUi);                                            // 或 sUi.start(&myRootPage);
 
     while (true) {
         sUi.tick();                        // dt 由 port.millis 计算
@@ -268,10 +273,10 @@ port.haptic     = [](void*, uint16_t ms) { /* 振动马达，可选 */ };
 
 ## 9. 从示例到产品
 
-示例（`components/tixel_demo`）刻意保持最小：英文文案、无持久化、无网络。
+示例（`examples/apps`）刻意保持最小：英文文案、无持久化、无网络。
 落地时通常只需要：
 
-1. 把 `demo::kDefaults` 换成自己的默认值，`S_*` 设置项按需扩展（从 `kSettingUser` 起）。
+1. 把 `tixel::apps::kDefaults` 换成自己的默认值，`S_*` 设置项按需扩展（从 `kSettingUser` 起）。
 2. 用 `Menu` 表驱动替换设置页的表；页面数量不受限制（页面实例静态分配）。
 3. 接入 NVS 的 `settingsLoad/Save`，重启后保留亮度、语言等。
 4. 需要中文时替换 `theme::kUi/kTiny` 为带 unicode 索引的字体，并把文本入口改为 UTF-8。

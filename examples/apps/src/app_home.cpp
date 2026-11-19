@@ -7,9 +7,9 @@
 #include "tixel/icons.hpp"
 #include "tixel/math.hpp"
 #include "tixel/theme.hpp"
-#include "tixel_demo/apps.hpp"
+#include "apps/apps.hpp"
 
-namespace demo {
+namespace tixel::apps {
 namespace {
 
 constexpr int kCount = 5;
@@ -224,4 +224,4 @@ tixel::Page* homePage(bool withIntro) {
     return &sHome;
 }
 
-}  // namespace demo
+}  // namespace tixel::apps

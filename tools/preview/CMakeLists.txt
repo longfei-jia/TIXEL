@@ -8,10 +8,10 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 file(GLOB TIXEL_SRC ${CMAKE_CURRENT_LIST_DIR}/../../components/tixel/src/*.cpp)
-file(GLOB DEMO_SRC ${CMAKE_CURRENT_LIST_DIR}/../../components/tixel_demo/src/*.cpp)
+file(GLOB APPS_SRC ${CMAKE_CURRENT_LIST_DIR}/../../examples/apps/src/*.cpp)
 
-add_executable(preview preview.cpp ${TIXEL_SRC} ${DEMO_SRC})
+add_executable(preview preview.cpp ${TIXEL_SRC} ${APPS_SRC})
 target_include_directories(preview PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}/../../components/tixel/include
-  ${CMAKE_CURRENT_LIST_DIR}/../../components/tixel_demo/include)
+  ${CMAKE_CURRENT_LIST_DIR}/../../examples/apps/include)
 target_compile_options(preview PRIVATE -Wall -Wextra -Wno-unused-parameter)

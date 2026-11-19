@@ -1,7 +1,12 @@
-# TIXEL C++ demo pages (optional component).
+# TIXEL sample app set (component `apps`).
 #
-# Boot splash, icon carousel, clock, music, monitor, settings menus and about.
-# Depends on `tixel`; contains no platform code.
+# The seven pages that demo the framework, ported from the upstream reference
+# sample: boot splash, icon carousel, clock, music, system monitor, settings
+# menus and about page. No platform code lives here - a port supplies time,
+# keys and a display sink.
+#
+# Lives under examples/ because it is sample material, not part of the library:
+# add this directory to EXTRA_COMPONENT_DIRS only when you want the pages.
 idf_component_register(
     SRCS
         "src/app_common.cpp"

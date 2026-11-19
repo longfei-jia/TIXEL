@@ -3,9 +3,9 @@
 #include "tixel/math.hpp"
 #include "tixel/theme.hpp"
 #include "tixel/widgets.hpp"
-#include "tixel_demo/apps.hpp"
+#include "apps/apps.hpp"
 
-namespace demo {
+namespace tixel::apps {
 
 const int32_t kDefaults[kSettingCount] = {
     /* brightness */ 80,
@@ -43,4 +43,4 @@ void statusBar(tixel::Ui& ui, tixel::Canvas& g, float y) {
     }
 }
 
-}  // namespace demo
+}  // namespace tixel::apps

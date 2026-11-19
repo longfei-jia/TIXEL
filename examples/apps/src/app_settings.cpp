@@ -3,9 +3,9 @@
 
 #include "tixel/menu.hpp"
 #include "tixel/overlay.hpp"
-#include "tixel_demo/apps.hpp"
+#include "apps/apps.hpp"
 
-namespace demo {
+namespace tixel::apps {
 namespace {
 
 // ---- brightness sheet ---------------------------------------------------
@@ -82,4 +82,4 @@ tixel::Menu sSettings("Settings", kSettingsItems);
 
 tixel::Page* settingsPage() { return &sSettings; }
 
-}  // namespace demo
+}  // namespace tixel::apps

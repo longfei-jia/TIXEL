@@ -10,9 +10,9 @@
 #include "tixel/math.hpp"
 #include "tixel/theme.hpp"
 #include "tixel/widgets.hpp"
-#include "tixel_demo/apps.hpp"
+#include "apps/apps.hpp"
 
-namespace demo {
+namespace tixel::apps {
 namespace {
 
 constexpr int kPoints = 34;
@@ -246,4 +246,4 @@ tixel::Page* monitorPage() {
     return &sMonitor;
 }
 
-}  // namespace demo
+}  // namespace tixel::apps

@@ -5,9 +5,9 @@
 #include "tixel/math.hpp"
 #include "tixel/theme.hpp"
 #include "tixel/widgets.hpp"
-#include "tixel_demo/apps.hpp"
+#include "apps/apps.hpp"
 
-namespace demo {
+namespace tixel::apps {
 namespace {
 
 constexpr float kLogoH = 34.f;                  // logisoso34 cap height
@@ -129,4 +129,4 @@ tixel::Page* aboutPage() {
     return &sAbout;
 }
 
-}  // namespace demo
+}  // namespace tixel::apps

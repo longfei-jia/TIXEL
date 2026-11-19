@@ -16,7 +16,7 @@
 #include "tixel/config.hpp"
 #include "tixel/theme.hpp"
 #include "tixel/ui.hpp"
-#include "tixel_demo/apps.hpp"
+#include "apps/apps.hpp"
 
 namespace {
 
@@ -88,8 +88,8 @@ int main(int argc, char** argv) {
     port.flush = portFlush;
     port.keyLayout = tixel::KeyLayout::Three;
 
-    gUi.init(port, demo::kDefaults, demo::kSettingCount);
-    demo::start(gUi);
+    gUi.init(port, tixel::apps::kDefaults, tixel::apps::kSettingCount);
+    tixel::apps::start(gUi);
     std::printf("tixel preview %dx%d, %d pages, %d B/frame\n", tixel::kWidth, tixel::kHeight,
                 tixel::kPages, tixel::kFbBytes);
     {

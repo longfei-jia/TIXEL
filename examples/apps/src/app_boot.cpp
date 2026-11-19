@@ -4,9 +4,9 @@
 
 #include "tixel/math.hpp"
 #include "tixel/theme.hpp"
-#include "tixel_demo/apps.hpp"
+#include "apps/apps.hpp"
 
-namespace demo {
+namespace tixel::apps {
 namespace {
 
 // The choreography is authored on a 3.35 s timeline; kBootSpeed plays it faster
@@ -122,4 +122,4 @@ tixel::Page* bootPage() {
     return &sBoot;
 }
 
-}  // namespace demo
+}  // namespace tixel::apps

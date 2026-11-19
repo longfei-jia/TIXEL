@@ -8,9 +8,9 @@
 #include "tixel/math.hpp"
 #include "tixel/theme.hpp"
 #include "tixel/widgets.hpp"
-#include "tixel_demo/apps.hpp"
+#include "apps/apps.hpp"
 
-namespace demo {
+namespace tixel::apps {
 namespace {
 
 const char* kDays[] = {"MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"};
@@ -227,4 +227,4 @@ tixel::Page* clockPage() {
     return &sClock;
 }
 
-}  // namespace demo
+}  // namespace tixel::apps

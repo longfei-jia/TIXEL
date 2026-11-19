@@ -1,6 +1,6 @@
 # TIXEL C++ · 128×128 单色 UI 框架（ESP-IDF 组件）
 
-把 `res/LUMEN`（上游 C99 实现，128×64）重写为 C++17，面向 128×128 单色面板：
+以参考实现（C99，128×64）为基准重写为 C++17，面向 128×128 单色面板：
 页面、控件、动效、示例页面全部保留，去掉 STM32 平台代码与 u8g2 依赖，
 按 ESP-IDF 组件组织，可直接被其他工程引用。
 
@@ -10,11 +10,11 @@
 
 | 项目 | 结果 |
 | --- | --- |
-| 组件 | `components/tixel`（库）+ `components/tixel_demo`（示例页面） |
+| 组件 | `components/tixel`（库）+ `examples/apps`（示例页面，组件名 `apps`） |
 | 面板 | 128×128，页格式帧缓冲，16 页 / 2048 B，脏页掩码 16 bit |
 | 依赖 | 仅 libm；不依赖 u8g2（内置 u8g2 字体解码器，字体数据按需抽取） |
 | 分配 | 零动态分配，全部静态存储；`tixel::Ui` 约 7 KB（含 3 个帧缓冲） |
-| 体积 | `libtixel.a` 51.9 KB（53,130 B，含 16 KB 字体数据）、`libtixel_demo.a` 22.3 KB（+2.9 KB data / 3.7 KB bss）；示例固件 215 KB（220,192 B） |
+| 体积 | `libtixel.a` 51.9 KB（53,130 B，含 16 KB 字体数据）、`libapps.a` 22.3 KB（+2.9 KB data / 3.7 KB bss）；示例固件 215 KB（220,192 B） |
 | 一致性 | 与上游**逐字节**一致：`tests/parity` 329 项 + `tests/menu_parity` 15 帧，0 失败 |
 | 版式 | 纵向 2×、字号取屏宽可容纳的最大值；逐页映射见 [docs/layout.md](docs/layout.md) |
 
@@ -22,12 +22,11 @@
 
 ```
 components/tixel/          库：canvas / font / motion / input / settings / ui / overlay / widgets / menu / icons
-components/tixel_demo/     示例页面：boot、home、clock、music、monitor、settings、about
-examples/esp32_demo/       IDF 示例工程（抽象面板接口 + 三键输入）
-tests/                     与上游的逐字节对比测试（需要 res/LUMEN 参考源码）
+examples/apps/             示例页面：boot、home、clock、music、monitor、settings、about（组件名 apps）
+tests/                     与参考实现的逐字节对比测试（需要 res/LUMEN 源码）
 tools/                     字体抽取、宿主抓帧预览、PGM→PNG
 docs/                      接入指南（usage.md）、版式映射表（layout.md）、预览截图
-res/LUMEN/                 上游参考实现（.gitignore 忽略；仅测试需要，自行 clone）
+res/LUMEN/                 参考实现源码（.gitignore 忽略；仅测试需要，自行 clone）
 ```
 
 ## 3. 在 IDF 工程中使用
@@ -39,7 +38,10 @@ res/LUMEN/                 上游参考实现（.gitignore 忽略；仅测试需
 
 ```cmake
 # 工程根 CMakeLists.txt
-set(EXTRA_COMPONENT_DIRS ${CMAKE_CURRENT_LIST_DIR}/path/to/TIXEL/components)
+set(TIXEL_DIR "${CMAKE_CURRENT_LIST_DIR}/path/to/TIXEL")
+set(EXTRA_COMPONENT_DIRS
+    ${TIXEL_DIR}/components      # 库：tixel
+    ${TIXEL_DIR}/examples)       # 示例页面：apps（不需要时去掉这行）
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(my_ui)
 ```
@@ -48,7 +50,7 @@ project(my_ui)
 
 ```cmake
 idf_component_register(SRCS "main.cpp" INCLUDE_DIRS "." REQUIRES tixel)
-# 需要示例页面时再加 tixel_demo
+# 需要示例页面时再加 apps
 ```
 
 3）实现 `tixel::Port`，把硬件接进来（自由函数指针，无 std::function）：
@@ -70,8 +72,8 @@ port.keyLayout = tixel::KeyLayout::Three;   // 三键（UP/DOWN/ENTER），默�
 
 ```cpp
 static tixel::Ui ui;
-ui.init(port, demo::kDefaults, demo::kSettingCount);
-demo::start(ui);                 // 或 ui.start(myRootPage);
+ui.init(port, tixel::apps::kDefaults, tixel::apps::kSettingCount);
+tixel::apps::start(ui);                 // 或 ui.start(myRootPage);
 
 while (true) {
     ui.tick();                   // dt 由 port.millis 计算
@@ -105,24 +107,24 @@ while (true) {
 ## 5. 构建验证（ESP-IDF v6.1 / esp32s3）
 
 ```
-$ idf.py -C examples/esp32_demo build
+$ idf.py build
 Successfully created ESP32-S3 image.
-tixel_esp32_demo.bin binary size 0x35c10 bytes. Smallest app partition is 0x100000 bytes. 0xca3f0 bytes (79%) free.
+my_ui.bin binary size 0x35c20 bytes. Smallest app partition is 0x100000 bytes. 0xca3e0 bytes (79%) free.
 ```
 
 组件以 `-Wall -Werror`、`-std=gnu++26`、`-fno-exceptions -fno-rtti` 编译通过，
-无警告。示例工程用 `set(COMPONENTS main tixel tixel_demo)` 裁剪组件集，
-不构建 mbedTLS/Wi-Fi 等无关部分。
+无警告。只引用本框架的工程可用 `set(COMPONENTS main tixel apps)` 裁剪组件集
+（`apps` 仅在需要示例页面时加入），不构建 mbedTLS/Wi-Fi 等无关部分。
 
 ## 6. 一致性验证
 
-`tests/` 把库**按上游几何（128×64 + 上游字体）**编译，与 `res/LUMEN` 的 C 实现逐字节比较：
+`tests/` 把库**按参考几何（128×64 + 参考字体）**编译，与 `res/LUMEN` 的 C 实现逐字节比较：
 
 ```bash
-# 参考实现不随仓库分发，先准备上游源码
+# 参考实现不随仓库分发，先准备源码
 git clone https://github.com/Xulijun180/LUMEN res/LUMEN
 
-cmake -S tests -B build/tests -G Ninja        # 或 -DLUMEN_REF_DIR=/path/to/LUMEN
+cmake -S tests -B build/tests -G Ninja        # 或 -DREF_DIR=/path/to/checkout
 cmake --build build/tests
 ./build/tests/parity.exe        # 329 checks, 0 failures
 ./build/tests/menu_parity.exe   # 15 checks, 0 failures
@@ -179,6 +181,6 @@ python tools/pgm2png.py build/preview/out build/preview/png 2
 
 ## 10. 许可
 
-- 本仓库的 C++ 实现：跟随上游 TIXEL 的 AGPL-3.0（见 `res/LUMEN/LICENSE`）。
+- 本仓库的 C++ 实现：跟随参考实现的 AGPL-3.0（见 `res/LUMEN/LICENSE`）。
 - 字体数据来自 u8g2（BSD-2-Clause，版权 Olikraus），仅抽取本库使用的 10 个字体数组，
   原样保留字节内容，见 `components/tixel/src/fonts_data.cpp` 与 `tools/extract_fonts.py`。
