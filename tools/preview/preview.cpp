@@ -244,6 +244,38 @@ int main(int argc, char** argv) {
     frames(30);
     shot("about_scrolled");
 
+    // --- animation playground (menu item 6) ---------------------------------
+    back();                                  // About -> Home
+    expect("Home");
+    press(tixel::Key::Next);                 // About -> Animation
+    press(tixel::Key::Ok);
+    frames(45);
+    expect("Animation");
+    shot("anim_menu");
+    press(tixel::Key::Ok);                   // Layout demo: card morphs to screen
+    frames(40);
+    expect("AnimLayout");
+    shot("anim_layout");
+    seconds(0.85f);                          // mid-morph
+    shot("anim_layout_mid");
+    seconds(0.85f);                          // near full-screen
+    shot("anim_layout_wide");
+    back();                                  // -> Animation list
+    expect("Animation");
+    press(tixel::Key::Next);                 // Layout -> Widget
+    press(tixel::Key::Next);                 // Widget -> Frame
+    press(tixel::Key::Ok);
+    frames(30);
+    expect("AnimFrame");
+    shot("anim_frame_a");
+    seconds(1.1f);                           // dissolve halfway
+    shot("anim_frame_b");
+    seconds(1.1f);                           // mostly pattern B
+    shot("anim_frame_c");
+    back();                                  // -> Animation list
+    back();                                  // -> Home
+    expect("Home");
+
     std::printf("fps ~%.1f, frames %u, depth %u\n", gUi.fps(), gUi.frames(), gUi.depth());
     return 0;
 }

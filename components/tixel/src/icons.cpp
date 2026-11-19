@@ -1,5 +1,7 @@
 #include "tixel/icons.hpp"
 
+#include <cmath>
+
 #include "tixel/math.hpp"
 
 namespace tixel {
@@ -81,6 +83,16 @@ void iconAbout(Canvas& c, float cx, float cy, float s, float ph) {
     const float bob = sinf(ph * 4) * s * 0.04f;
     c.disc(cx, cy - s * 0.2f + bob, maxf(1.f, s * 0.075f));
     c.capsule(cx, cy - s * 0.02f, cx, cy + s * 0.26f, stroke(s) * 1.5f);
+}
+
+// Poster child of parameter interpolation: one rbox glyph whose corner radius
+// swings from half-size (circle) down to a near-square, looping with `phase`.
+// No bitmap frames - every state is a legal shape of the same primitive.
+void iconMorph(Canvas& c, float cx, float cy, float s, float ph) {
+    const float t = 0.5f - 0.5f * cosf(ph * kTau);
+    const float r = lerpf(s * 0.5f, s * 0.14f, t);
+    c.rbox(cx - s * 0.5f, cy - s * 0.5f, s, s, r);
+    c.disc(cx, cy, maxf(1.f, s * 0.09f));
 }
 
 }  // namespace tixel

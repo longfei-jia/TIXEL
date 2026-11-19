@@ -36,6 +36,7 @@ tixel::Page* musicPage();
 tixel::Page* monitorPage();
 tixel::Page* settingsPage();
 tixel::Page* aboutPage();
+tixel::Page* animPage();
 
 void statusBar(tixel::Ui& ui, tixel::Canvas& g, float y);
 

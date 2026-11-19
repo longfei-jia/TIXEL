@@ -17,6 +17,7 @@ idf_component_register(
         "src/app_monitor.cpp"
         "src/app_settings.cpp"
         "src/app_about.cpp"
+        "src/app_anim.cpp"
     INCLUDE_DIRS "include"
     REQUIRES tixel
 )
