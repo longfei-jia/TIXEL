@@ -6,9 +6,9 @@
 #include <cstdio>
 #include <cstring>
 
-#include "lumen/menu.hpp"
-#include "lumen/settings.hpp"
-#include "lumen/ui.hpp"
+#include "tixel/menu.hpp"
+#include "tixel/settings.hpp"
+#include "tixel/ui.hpp"
 
 extern "C" {
 #include "lm_menu.h"
@@ -51,39 +51,39 @@ LM_MENU_DEFINE(sRefMenu, "Settings", kItems);
 lm_ui_t sRefUi;
 
 // ---- C++ side -----------------------------------------------------------
-void formatPercentCpp(lumen::Ui& ui, char* out, int n) {
-    std::snprintf(out, static_cast<size_t>(n), "%d%%", static_cast<int>(ui.setting(lumen::kSettingBrightness)));
+void formatPercentCpp(tixel::Ui& ui, char* out, int n) {
+    std::snprintf(out, static_cast<size_t>(n), "%d%%", static_cast<int>(ui.setting(tixel::kSettingBrightness)));
 }
-void noopActionCpp(lumen::Menu&, int) {}
+void noopActionCpp(tixel::Menu&, int) {}
 
-const lumen::Option kSleepOptsCpp[] = {{15, "15s"}, {30, "30s"}, {60, "60s"}, {0, "Never"}};
-const lumen::Option kMotionOptsCpp[] = {{100, "Normal"}, {50, "Slow"}, {150, "Fast"}};
+const tixel::Option kSleepOptsCpp[] = {{15, "15s"}, {30, "30s"}, {60, "60s"}, {0, "Never"}};
+const tixel::Option kMotionOptsCpp[] = {{100, "Normal"}, {50, "Slow"}, {150, "Fast"}};
 
-const lumen::MenuItem kItemsCpp[] = {
-    LUMEN_ITEM_SHEET("Brightness", noopActionCpp, formatPercentCpp),
-    LUMEN_ITEM_TOGGLE("Sound", kSound),
-    LUMEN_ITEM_OPTION("Auto sleep", lumen::kSettingAutosleep, kSleepOptsCpp),
-    LUMEN_ITEM_OPTION("Motion", lumen::kSettingMotion, kMotionOptsCpp),
-    LUMEN_ITEM_TOGGLE("Wi-Fi", kWifi),
-    LUMEN_ITEM_ACTION("Reset", noopActionCpp),
+const tixel::MenuItem kItemsCpp[] = {
+    TIXEL_ITEM_SHEET("Brightness", noopActionCpp, formatPercentCpp),
+    TIXEL_ITEM_TOGGLE("Sound", kSound),
+    TIXEL_ITEM_OPTION("Auto sleep", tixel::kSettingAutosleep, kSleepOptsCpp),
+    TIXEL_ITEM_OPTION("Motion", tixel::kSettingMotion, kMotionOptsCpp),
+    TIXEL_ITEM_TOGGLE("Wi-Fi", kWifi),
+    TIXEL_ITEM_ACTION("Reset", noopActionCpp),
 };
 
-lumen::Menu sCppMenu("Settings", kItemsCpp);
-lumen::Ui sCppUi;
+tixel::Menu sCppMenu("Settings", kItemsCpp);
+tixel::Ui sCppUi;
 
 void frame(const char* what) {
     const uint8_t* expect = lm_gfx_screen(&sRefUi.gfx);
     const uint8_t* actual = sCppUi.canvas().screen();
     gChecks++;
-    if (std::memcmp(expect, actual, static_cast<size_t>(lumen::kFbBytes)) == 0) return;
+    if (std::memcmp(expect, actual, static_cast<size_t>(tixel::kFbBytes)) == 0) return;
     int first = -1;
-    for (int i = 0; i < lumen::kFbBytes; i++)
+    for (int i = 0; i < tixel::kFbBytes; i++)
         if (expect[i] != actual[i]) {
             first = i;
             break;
         }
     std::printf("FAIL %-28s first diff byte %d (page %d, x %d, y %d)\n", what, first,
-                first / lumen::kWidth, first % lumen::kWidth, (first / lumen::kWidth) * 8);
+                first / tixel::kWidth, first % tixel::kWidth, (first / tixel::kWidth) * 8);
     gFailures++;
 }
 
@@ -108,7 +108,7 @@ void step(float dt) {
 void keys(lm_key_t key, lm_kind_t kind) {
     lm_event_t e = {static_cast<uint8_t>(key), static_cast<uint8_t>(kind)};
     lm_menu_ops.key(&sRefMenu.base, e);
-    sCppMenu.key(lumen::Event{static_cast<lumen::Key>(key), static_cast<lumen::Kind>(kind)});
+    sCppMenu.key(tixel::Event{static_cast<tixel::Key>(key), static_cast<tixel::Kind>(kind)});
 }
 
 }  // namespace
@@ -118,7 +118,7 @@ extern "C" void lm_haptic(lm_ui_t*) {}
 extern "C" void lm_push(lm_ui_t*, lm_page_t*, lm_tr_kind_t) {}
 
 int main() {
-    std::printf("menu parity: %dx%d\n", lumen::kWidth, lumen::kHeight);
+    std::printf("menu parity: %dx%d\n", tixel::kWidth, tixel::kHeight);
 
     std::memset(&sRefUi, 0, sizeof(sRefUi));
     lm_gfx_init(&sRefUi.gfx);
@@ -126,7 +126,7 @@ int main() {
     sRefMenu.base.ui = &sRefUi;
     lm_menu_ops.enter(&sRefMenu.base);
 
-    lumen::Port port;   // no millis/flush: we drive step() by hand
+    tixel::Port port;   // no millis/flush: we drive step() by hand
     sCppUi.init(port, kDefaults, kSettingCount);
     sCppMenu.ui = &sCppUi;
     sCppMenu.enter();

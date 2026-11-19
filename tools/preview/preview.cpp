@@ -13,23 +13,23 @@
 #include <string>
 #include <vector>
 
-#include "lumen/config.hpp"
-#include "lumen/theme.hpp"
-#include "lumen/ui.hpp"
-#include "lumen_demo/apps.hpp"
+#include "tixel/config.hpp"
+#include "tixel/theme.hpp"
+#include "tixel/ui.hpp"
+#include "tixel_demo/apps.hpp"
 
 namespace {
 
 uint32_t gNowMs = 0;
 uint8_t gKeys = 0;
-lumen::Ui gUi;
+tixel::Ui gUi;
 std::string gOutDir = "out";
 int gShot = 0;
 
 uint32_t portMillis(void*) { return gNowMs; }
 uint8_t portReadKeys(void*) { return gKeys; }
 void portHaptic(void*, uint16_t) {}
-void portFlush(void*, const uint8_t*, lumen::PageMask) {}
+void portFlush(void*, const uint8_t*, tixel::PageMask) {}
 
 void frames(int count) {
     for (int i = 0; i < count; i++) {
@@ -40,8 +40,8 @@ void frames(int count) {
 
 void seconds(float s) { frames(static_cast<int>(s * 62.5f + 0.5f)); }
 
-void press(lumen::Key key, int holdFrames = 3) {
-    gKeys = lumen::keyBit(key);
+void press(tixel::Key key, int holdFrames = 3) {
+    gKeys = tixel::keyBit(key);
     frames(holdFrames);
     gKeys = 0;
     frames(2);
@@ -49,12 +49,12 @@ void press(lumen::Key key, int holdFrames = 3) {
 
 // 3-key layout: a hold between 400 ms and 1200 ms maps to BACK on release.
 void back() {
-    press(lumen::Key::Ok, 32);
+    press(tixel::Key::Ok, 32);
     frames(40);
 }
 
 void expect(const char* page) {
-    lumen::Page* top = gUi.top();
+    tixel::Page* top = gUi.top();
     const char* title = (top && top->title) ? top->title : "(none)";
     if (std::strcmp(title, page) != 0) std::printf("  !! expected page %s, got %s\n", page, title);
 }
@@ -68,10 +68,10 @@ void shot(const char* name) {
         std::perror(path);
         return;
     }
-    std::fprintf(f, "P5\n%d %d\n255\n", lumen::kWidth, lumen::kHeight);
-    for (int y = 0; y < lumen::kHeight; y++)
-        for (int x = 0; x < lumen::kWidth; x++)
-            std::fputc(lumen::bufGet(fb, x, y) ? 255 : 0, f);
+    std::fprintf(f, "P5\n%d %d\n255\n", tixel::kWidth, tixel::kHeight);
+    for (int y = 0; y < tixel::kHeight; y++)
+        for (int x = 0; x < tixel::kWidth; x++)
+            std::fputc(tixel::bufGet(fb, x, y) ? 255 : 0, f);
     std::fclose(f);
     std::printf("  %s\n", path);
 }
@@ -81,24 +81,24 @@ void shot(const char* name) {
 int main(int argc, char** argv) {
     if (argc > 1) gOutDir = argv[1];
 
-    lumen::Port port;
+    tixel::Port port;
     port.millis = portMillis;
     port.readKeys = portReadKeys;
     port.haptic = portHaptic;
     port.flush = portFlush;
-    port.keyLayout = lumen::KeyLayout::Three;
+    port.keyLayout = tixel::KeyLayout::Three;
 
     gUi.init(port, demo::kDefaults, demo::kSettingCount);
     demo::start(gUi);
-    std::printf("lumen preview %dx%d, %d pages, %d B/frame\n", lumen::kWidth, lumen::kHeight,
-                lumen::kPages, lumen::kFbBytes);
+    std::printf("tixel preview %dx%d, %d pages, %d B/frame\n", tixel::kWidth, tixel::kHeight,
+                tixel::kPages, tixel::kFbBytes);
     {
-        struct Role { const char* name; const lumen::Font* f; } roles[] = {
-            {"ui", &lumen::theme::kUi}, {"tiny", &lumen::theme::kTiny}, {"mid", &lumen::theme::kMid},
-            {"big", &lumen::theme::kBig}, {"logo", &lumen::theme::kLogo}};
+        struct Role { const char* name; const tixel::Font* f; } roles[] = {
+            {"ui", &tixel::theme::kUi}, {"tiny", &tixel::theme::kTiny}, {"mid", &tixel::theme::kMid},
+            {"big", &tixel::theme::kBig}, {"logo", &tixel::theme::kLogo}};
         for (const Role& r : roles)
-            std::printf("  font %-5s ascent %2d line %2d  LUMEN %3d  Brightness %3d  Wi-Fi %3d\n",
-                        r.name, r.f->ascent(), r.f->lineHeight(), r.f->width("LUMEN"),
+            std::printf("  font %-5s ascent %2d line %2d  TIXEL %3d  Brightness %3d  Wi-Fi %3d\n",
+                        r.name, r.f->ascent(), r.f->lineHeight(), r.f->width("TIXEL"),
                         r.f->width("Brightness"), r.f->width("Wi-Fi"));
     }
 
@@ -115,98 +115,98 @@ int main(int argc, char** argv) {
     shot("home");
 
     // home -> clock
-    press(lumen::Key::Next);
+    press(tixel::Key::Next);
     frames(30);
     shot("home_next");
-    press(lumen::Key::Prev);
+    press(tixel::Key::Prev);
     frames(30);
-    press(lumen::Key::Ok);
+    press(tixel::Key::Ok);
     frames(45);
     expect("Clock");
     shot("clock");
-    press(lumen::Key::Next);
+    press(tixel::Key::Next);
     frames(40);
     shot("clock_stopwatch");
-    press(lumen::Key::Ok);
+    press(tixel::Key::Ok);
     seconds(1.0f);
     shot("clock_running");
     back();
     expect("Home");
 
     // music
-    press(lumen::Key::Next);
+    press(tixel::Key::Next);
     frames(30);
-    press(lumen::Key::Ok);
+    press(tixel::Key::Ok);
     frames(45);
     expect("Music");
     shot("music");
-    press(lumen::Key::Ok);   // play
+    press(tixel::Key::Ok);   // play
     seconds(1.4f);
     shot("music_playing");
     back();
 
     // monitor
-    press(lumen::Key::Next);
+    press(tixel::Key::Next);
     frames(30);
-    press(lumen::Key::Ok);
+    press(tixel::Key::Ok);
     frames(45);
     expect("Monitor");
     shot("monitor");
-    press(lumen::Key::Next);   // RAM tab
+    press(tixel::Key::Next);   // RAM tab
     frames(40);
     shot("monitor_ram");
-    press(lumen::Key::Ok);     // pause badge
+    press(tixel::Key::Ok);     // pause badge
     frames(40);
     shot("monitor_paused");
-    press(lumen::Key::Ok);
+    press(tixel::Key::Ok);
     frames(20);
     back();
 
     // settings
-    press(lumen::Key::Next);
+    press(tixel::Key::Next);
     frames(30);
-    press(lumen::Key::Ok);
+    press(tixel::Key::Ok);
     frames(45);
     expect("Settings");
     shot("settings");
-    press(lumen::Key::Ok);   // brightness sheet
+    press(tixel::Key::Ok);   // brightness sheet
     frames(45);
     shot("sheet");
-    press(lumen::Key::Next);
-    press(lumen::Key::Next);
-    press(lumen::Key::Next);
+    press(tixel::Key::Next);
+    press(tixel::Key::Next);
+    press(tixel::Key::Next);
     frames(45);
     shot("sheet_changed");
-    press(lumen::Key::Ok);   // close
+    press(tixel::Key::Ok);   // close
     frames(30);
-    press(lumen::Key::Next);   // Sound
-    press(lumen::Key::Next);   // Vibration
-    press(lumen::Key::Next);   // Wi-Fi
-    press(lumen::Key::Ok);     // async busy phase
+    press(tixel::Key::Next);   // Sound
+    press(tixel::Key::Next);   // Vibration
+    press(tixel::Key::Next);   // Wi-Fi
+    press(tixel::Key::Ok);     // async busy phase
     frames(20);
     shot("wifi_busy");
     seconds(1.4f);
     shot("toast");
-    press(lumen::Key::Next);   // Display submenu
-    press(lumen::Key::Ok);
+    press(tixel::Key::Next);   // Display submenu
+    press(tixel::Key::Ok);
     frames(45);
     expect("Display");
     shot("display_menu");
-    press(lumen::Key::Ok);     // invert toggle
+    press(tixel::Key::Ok);     // invert toggle
     frames(45);
     shot("display_inverted");
-    press(lumen::Key::Ok);
+    press(tixel::Key::Ok);
     frames(45);
     back();                    // -> settings
     expect("Settings");
-    press(lumen::Key::Next);   // Reset
-    press(lumen::Key::Ok);
+    press(tixel::Key::Next);   // Reset
+    press(tixel::Key::Ok);
     frames(45);
     shot("dialog");
-    press(lumen::Key::Next);
+    press(tixel::Key::Next);
     frames(20);
     shot("dialog_reset");
-    press(lumen::Key::Ok);
+    press(tixel::Key::Ok);
     frames(30);
     shot("dialog_busy");
     seconds(1.6f);
@@ -215,13 +215,13 @@ int main(int argc, char** argv) {
     expect("Home");
 
     // about
-    press(lumen::Key::Next);
+    press(tixel::Key::Next);
     frames(30);
-    press(lumen::Key::Ok);
+    press(tixel::Key::Ok);
     frames(60);
     expect("About");
     shot("about");
-    press(lumen::Key::Next);
+    press(tixel::Key::Next);
     frames(30);
     shot("about_scrolled");
 

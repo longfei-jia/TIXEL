@@ -1,8 +1,8 @@
-# 在其他 ESP-IDF 工程中使用 Lumen C++
+# 在其他 ESP-IDF 工程中使用 TIXEL C++
 
 本文是从零接入的完整步骤：引入组件、实现 port、接面板与按键、跑起来。
-框架本体（`components/lumen`）不含任何平台代码，全部硬件差异集中在
-`lumen::Port` 的 3~8 个函数指针里。
+框架本体（`components/tixel`）不含任何平台代码，全部硬件差异集中在
+`tixel::Port` 的 3~8 个函数指针里。
 
 ---
 
@@ -12,7 +12,7 @@
 | --- | --- |
 | ESP-IDF | v5.x / v6.x（组件按 C++17 编写，IDF v6 默认 `gnu++26` 亦可） |
 | 面板 | 128×128 单色（1 bit），或能接收页格式缓冲的自定义面板 |
-| 内存 | `lumen::Ui` 约 7 KB（含 3 个 2048 B 帧缓冲），建议静态分配 |
+| 内存 | `tixel::Ui` 约 7 KB（含 3 个 2048 B 帧缓冲），建议静态分配 |
 | 依赖 | 仅 libm；不需要 u8g2、不需要 LVGL |
 
 ## 1. 把组件引入工程
@@ -25,8 +25,8 @@
 your_project/
 ├── CMakeLists.txt
 ├── components/
-│   ├── lumen/          # 从本仓库复制
-│   └── lumen_demo/     # 可选：示例页面
+│   ├── tixel/          # 从本仓库复制
+│   └── tixel_demo/     # 可选：示例页面
 └── main/
 ```
 
@@ -38,7 +38,7 @@ ESP-IDF 会自动发现 `components/` 下的组件，无需改 CMake。
 # your_project/CMakeLists.txt
 cmake_minimum_required(VERSION 3.16)
 
-set(EXTRA_COMPONENT_DIRS "E:/path/to/dot/components")   # 指向本仓库 components
+set(EXTRA_COMPONENT_DIRS "E:/path/to/TIXEL/components")   # 指向本仓库 components
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(my_ui)
@@ -47,9 +47,9 @@ project(my_ui)
 ### 方式 C：git submodule
 
 ```bash
-git submodule add <本仓库地址> components/dot
+git submodule add <本仓库地址> components/TIXEL
 # CMakeLists.txt 中：
-set(EXTRA_COMPONENT_DIRS "${CMAKE_CURRENT_LIST_DIR}/components/dot/components")
+set(EXTRA_COMPONENT_DIRS "${CMAKE_CURRENT_LIST_DIR}/components/TIXEL/components")
 ```
 
 ### 在 main 里声明依赖
@@ -59,13 +59,13 @@ set(EXTRA_COMPONENT_DIRS "${CMAKE_CURRENT_LIST_DIR}/components/dot/components")
 idf_component_register(
     SRCS "main.cpp"
     INCLUDE_DIRS "."
-    REQUIRES lumen            # 只用库
-    # REQUIRES lumen lumen_demo  # 需要示例页面时
+    REQUIRES tixel            # 只用库
+    # REQUIRES tixel tixel_demo  # 需要示例页面时
 )
 ```
 
 > IDS v6 若在工程根用了 `set(COMPONENTS ...)` 裁剪组件集，记得把
-> `lumen` / `lumen_demo` 和 port 里用到的组件（`esp_timer`、`esp_driver_gpio` 等）
+> `tixel` / `tixel_demo` 和 port 里用到的组件（`esp_timer`、`esp_driver_gpio` 等）
 > 一并列出。
 
 ## 2. 最小可运行程序
@@ -75,13 +75,13 @@ idf_component_register(
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "lumen/ui.hpp"
-#include "lumen_demo/apps.hpp"      // 只用库时可删
+#include "tixel/ui.hpp"
+#include "tixel_demo/apps.hpp"      // 只用库时可删
 
-static lumen::Ui sUi;
+static tixel::Ui sUi;
 
 extern "C" void app_main() {
-    lumen::Port port;
+    tixel::Port port;
     port.millis   = [](void*) -> uint32_t { return (uint32_t)(esp_timer_get_time() / 1000); };
     port.readKeys = [](void*) -> uint8_t  { return 0; };        // 见第 4 节
     port.flush    = [](void*, const uint8_t* fb, uint16_t pages) { /* 见第 3 节 */ };
@@ -96,15 +96,15 @@ extern "C" void app_main() {
 }
 ```
 
-自定义页面只需继承 `lumen::Page`：
+自定义页面只需继承 `tixel::Page`：
 
 ```cpp
-class HelloPage : public lumen::Page {
+class HelloPage : public tixel::Page {
 public:
     void enter() override { title = "Hello"; }
-    void render(lumen::Canvas& g) override {
-        g.setFont(lumen::theme::kUi);
-        g.textCenter(lumen::kWidth / 2.f, 40, "HELLO");
+    void render(tixel::Canvas& g) override {
+        g.setFont(tixel::theme::kUi);
+        g.textCenter(tixel::kWidth / 2.f, 40, "HELLO");
         g.rbox(10, 60, 108, 24, 6);
     }
 };
@@ -185,10 +185,10 @@ port.flush = [](void*, const uint8_t* fb, uint16_t pages) { screen_present(fb, p
 
 | 位 | 键 | 宏 |
 | --- | --- | --- |
-| 0 | 上一个 / 上 | `lumen::keyBit(lumen::kKeyUp)` |
-| 1 | 下一个 / 下 | `lumen::keyBit(lumen::kKeyDown)` |
-| 2 | 确认 | `lumen::keyBit(lumen::kKeyEnter)` |
-| 3 | 返回（4 键布局才有） | `lumen::keyBit(lumen::Key::Back)` |
+| 0 | 上一个 / 上 | `tixel::keyBit(tixel::kKeyUp)` |
+| 1 | 下一个 / 下 | `tixel::keyBit(tixel::kKeyDown)` |
+| 2 | 确认 | `tixel::keyBit(tixel::kKeyEnter)` |
+| 3 | 返回（4 键布局才有） | `tixel::keyBit(tixel::Key::Back)` |
 
 两种布局（`port.keyLayout`）：
 
@@ -202,12 +202,12 @@ port.flush = [](void*, const uint8_t* fb, uint16_t pages) { screen_present(fb, p
 ```cpp
 port.readKeys = [](void*) -> uint8_t {
     uint8_t m = 0;
-    if (button_is_pressed(KEY_UP))   m |= lumen::keyBit(lumen::kKeyUp);
-    if (button_is_pressed(KEY_DOWN)) m |= lumen::keyBit(lumen::kKeyDown);
-    if (button_is_pressed(KEY_OK))   m |= lumen::keyBit(lumen::kKeyEnter);
+    if (button_is_pressed(KEY_UP))   m |= tixel::keyBit(tixel::kKeyUp);
+    if (button_is_pressed(KEY_DOWN)) m |= tixel::keyBit(tixel::kKeyDown);
+    if (button_is_pressed(KEY_OK))   m |= tixel::keyBit(tixel::kKeyEnter);
     return m;
 };
-port.keyLayout = lumen::KeyLayout::Three;
+port.keyLayout = tixel::KeyLayout::Three;
 ```
 
 没有驱动时，`gpio_config()` 配成输入 + 上拉，`gpio_get_level()==0` 即按下。
@@ -219,7 +219,7 @@ port.keyLayout = lumen::KeyLayout::Three;
 port.millis = [](void*) -> uint32_t { return (uint32_t)(esp_timer_get_time() / 1000); };
 
 // 真实时间（可选）：没有就返回 false，框架用内置时钟从 12:59 起走
-port.rtcGet = [](void*, lumen::DateTime* dt) -> bool {
+port.rtcGet = [](void*, tixel::DateTime* dt) -> bool {
     if (!timeSynced()) return false;        // SNTP 同步前返回 false
     // 填 dt：year/month/day/wday(0=周一)/hour/min/sec/ms
     return true;
@@ -227,7 +227,7 @@ port.rtcGet = [](void*, lumen::DateTime* dt) -> bool {
 
 // 设置持久化（可选）：返回 true 表示成功读到；不实现就一直用默认值
 port.settingsLoad = [](void*, int32_t* v, int n) -> bool {
-    // nvs_get_blob("lumen", v, &len) == ESP_OK
+    // nvs_get_blob("tixel", v, &len) == ESP_OK
     return false;
 };
 port.settingsSave = [](void*, const int32_t* v, int n) {
@@ -257,7 +257,7 @@ port.haptic     = [](void*, uint16_t ms) { /* 振动马达，可选 */ };
 
 | 现象 | 原因与处理 |
 | --- | --- |
-| 找不到 `lumen/ui.hpp` | `EXTRA_COMPONENT_DIRS` 没指向 `components`，或 `main` 没写 `REQUIRES lumen` |
+| 找不到 `tixel/ui.hpp` | `EXTRA_COMPONENT_DIRS` 没指向 `components`，或 `main` 没写 `REQUIRES tixel` |
 | 花屏 / 行错位 | 面板位序（Sharp 是 LSB-first）；页→行重排时 MSB 必须是最左像素 |
 | 整屏反色 | 面板 `1 = 白`，在 `flush` 里取反 |
 | 文字全空 | 字体角色被改成不含字母的 `_tn` 字体（只含数字）；换 `_tr` |
@@ -268,7 +268,7 @@ port.haptic     = [](void*, uint16_t ms) { /* 振动马达，可选 */ };
 
 ## 9. 从示例到产品
 
-示例（`components/lumen_demo`）刻意保持最小：英文文案、无持久化、无网络。
+示例（`components/tixel_demo`）刻意保持最小：英文文案、无持久化、无网络。
 落地时通常只需要：
 
 1. 把 `demo::kDefaults` 换成自己的默认值，`S_*` 设置项按需扩展（从 `kSettingUser` 起）。

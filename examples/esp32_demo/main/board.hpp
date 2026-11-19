@@ -7,8 +7,8 @@
 
 #include <cstdint>
 
-#include "lumen/port.hpp"
-#include "lumen/ui.hpp"
+#include "tixel/port.hpp"
+#include "tixel/ui.hpp"
 
 namespace demo_port {
 
@@ -16,24 +16,24 @@ namespace demo_port {
 using PanelSink = void (*)(void* ctx, const uint8_t* fb, uint16_t pages);
 
 // GPIOs of the three keys (active low, internal pull-ups). Override with -D.
-#ifndef LUMEN_KEY_UP_GPIO
-#define LUMEN_KEY_UP_GPIO 4
+#ifndef TIXEL_KEY_UP_GPIO
+#define TIXEL_KEY_UP_GPIO 4
 #endif
-#ifndef LUMEN_KEY_ENTER_GPIO
-#define LUMEN_KEY_ENTER_GPIO 5
+#ifndef TIXEL_KEY_ENTER_GPIO
+#define TIXEL_KEY_ENTER_GPIO 5
 #endif
-#ifndef LUMEN_KEY_DOWN_GPIO
-#define LUMEN_KEY_DOWN_GPIO 6
+#ifndef TIXEL_KEY_DOWN_GPIO
+#define TIXEL_KEY_DOWN_GPIO 6
 #endif
 
 class Board {
 public:
     void begin(PanelSink sink = nullptr, void* ctx = nullptr);
     void tick();   // one UI frame; call from your task
-    lumen::Ui& ui() { return ui_; }
+    tixel::Ui& ui() { return ui_; }
 
 private:
-    lumen::Ui ui_;
+    tixel::Ui ui_;
 };
 
 }  // namespace demo_port

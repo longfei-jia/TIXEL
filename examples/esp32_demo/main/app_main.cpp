@@ -1,4 +1,4 @@
-// ESP32-S3 demo: runs the Lumen sample on a display sink you provide.
+// ESP32-S3 demo: runs the TIXEL sample on a display sink you provide.
 //
 // The example ships without a panel driver on purpose. Wire yours up in
 // app_main() by passing a sink to Board::begin(); it receives the frame buffer
@@ -14,7 +14,7 @@
 
 namespace {
 
-constexpr const char* kTag = "lumen";
+constexpr const char* kTag = "tixel";
 
 // A sink that does nothing but count frames: enough to see the UI running in
 // the log. Replace it with your panel's page writer.
@@ -37,8 +37,8 @@ extern "C" void app_main() {
     static demo_port::Board board;
     board.begin(nullSink, &gPanel);
 
-    ESP_LOGI(kTag, "Lumen %dx%d, %d pages, %d B/frame", lumen::kWidth, lumen::kHeight, lumen::kPages,
-             lumen::kFbBytes);
+    ESP_LOGI(kTag, "TIXEL %dx%d, %d pages, %d B/frame", tixel::kWidth, tixel::kHeight, tixel::kPages,
+             tixel::kFbBytes);
 
     int64_t last = esp_timer_get_time();
     uint32_t lastFrames = 0;

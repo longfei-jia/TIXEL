@@ -1,6 +1,6 @@
 # 128×128 版式映射
 
-上游 LUMEN 的画布是 128×64。本库的规则是 **纵向 2×、字号取屏宽可容纳的最大值、
+上游 TIXEL 的画布是 128×64。本库的规则是 **纵向 2×、字号取屏宽可容纳的最大值、
 横向密集元素按 128 px 重排**。本文逐页列出实际数值与偏离 2× 的原因，
 方便对照上游源码或改版。
 
@@ -27,9 +27,9 @@
 | `kBig` | logisoso28_tn | `logisoso42_tn` | 42 | 53 | 时钟数字（仅数字） |
 | `kLogo` | logisoso22 | `logisoso34_tr` | 34 | 43 | 字标 |
 
-字标不取 2×（44）：`logisoso42` 的 "LUMEN" 实测 135 px > 128，改用 34 号（105 px）。
+字标不取 2×（44）：`logisoso42` 的 "TIXEL" 实测 124 px，离屏边只剩 2 px，改用 34 号（98 px，两侧各留 15 px）。
 
-## 菜单（`lumen::Menu`）
+## 菜单（`tixel::Menu`）
 
 | 项目 | 上游 | 本库 |
 | --- | --- | --- |
@@ -135,7 +135,7 @@
 
 ## 改面板尺寸时
 
-1. 改 `LUMEN_PANEL_WIDTH/HEIGHT`（`components/lumen/include/lumen/config.hpp`，或编译宏）。
+1. 改 `TIXEL_PANEL_WIDTH/HEIGHT`（`components/tixel/include/tixel/config.hpp`，或编译宏）。
 2. `kScale` 自动取 `H/64`；`theme.hpp` 按高度选 128 或 64 字体组。
 3. 复核上表中"说明"列标出的横向密集项（频谱、图表、秒标尺、对话框宽度）。
 4. 跑 `tests/parity`（64 高）与 `tools/preview`（目标尺寸）确认没有回归。

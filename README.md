@@ -1,4 +1,4 @@
-# Lumen C++ · 128×128 单色 UI 框架（ESP-IDF 组件）
+# TIXEL C++ · 128×128 单色 UI 框架（ESP-IDF 组件）
 
 把 `res/LUMEN`（上游 C99 实现，128×64）重写为 C++17，面向 128×128 单色面板：
 页面、控件、动效、示例页面全部保留，去掉 STM32 平台代码与 u8g2 依赖，
@@ -10,19 +10,19 @@
 
 | 项目 | 结果 |
 | --- | --- |
-| 组件 | `components/lumen`（库）+ `components/lumen_demo`（示例页面） |
+| 组件 | `components/tixel`（库）+ `components/tixel_demo`（示例页面） |
 | 面板 | 128×128，页格式帧缓冲，16 页 / 2048 B，脏页掩码 16 bit |
 | 依赖 | 仅 libm；不依赖 u8g2（内置 u8g2 字体解码器，字体数据按需抽取） |
-| 分配 | 零动态分配，全部静态存储；`lumen::Ui` 约 7 KB（含 3 个帧缓冲） |
-| 体积 | `liblumen.a` 52.5 KB（含 16 KB 字体数据）、`liblumen_demo.a` 22.8 KB + 3.8 KB RAM；示例固件 215 KB |
+| 分配 | 零动态分配，全部静态存储；`tixel::Ui` 约 7 KB（含 3 个帧缓冲） |
+| 体积 | `libtixel.a` 51.9 KB（53,130 B，含 16 KB 字体数据）、`libtixel_demo.a` 22.3 KB（+2.9 KB data / 3.7 KB bss）；示例固件 215 KB（220,192 B） |
 | 一致性 | 与上游**逐字节**一致：`tests/parity` 329 项 + `tests/menu_parity` 15 帧，0 失败 |
 | 版式 | 纵向 2×、字号取屏宽可容纳的最大值；逐页映射见 [docs/layout.md](docs/layout.md) |
 
 ## 2. 目录
 
 ```
-components/lumen/          库：canvas / font / motion / input / settings / ui / overlay / widgets / menu / icons
-components/lumen_demo/     示例页面：boot、home、clock、music、monitor、settings、about
+components/tixel/          库：canvas / font / motion / input / settings / ui / overlay / widgets / menu / icons
+components/tixel_demo/     示例页面：boot、home、clock、music、monitor、settings、about
 examples/esp32_demo/       IDF 示例工程（抽象面板接口 + 三键输入）
 tests/                     与上游的逐字节对比测试（需要 res/LUMEN 参考源码）
 tools/                     字体抽取、宿主抓帧预览、PGM→PNG
@@ -39,7 +39,7 @@ res/LUMEN/                 上游参考实现（.gitignore 忽略；仅测试需
 
 ```cmake
 # 工程根 CMakeLists.txt
-set(EXTRA_COMPONENT_DIRS ${CMAKE_CURRENT_LIST_DIR}/path/to/dot/components)
+set(EXTRA_COMPONENT_DIRS ${CMAKE_CURRENT_LIST_DIR}/path/to/TIXEL/components)
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(my_ui)
 ```
@@ -47,29 +47,29 @@ project(my_ui)
 2）在 `main/CMakeLists.txt` 中引用：
 
 ```cmake
-idf_component_register(SRCS "main.cpp" INCLUDE_DIRS "." REQUIRES lumen)
-# 需要示例页面时再加 lumen_demo
+idf_component_register(SRCS "main.cpp" INCLUDE_DIRS "." REQUIRES tixel)
+# 需要示例页面时再加 tixel_demo
 ```
 
-3）实现 `lumen::Port`，把硬件接进来（自由函数指针，无 std::function）：
+3）实现 `tixel::Port`，把硬件接进来（自由函数指针，无 std::function）：
 
 ```cpp
 static uint32_t ms(void*) { return esp_timer_get_time() / 1000; }
 static uint8_t  keys(void*) { /* 位=1 表示按下 */ return mask; }
 static void     flush(void*, const uint8_t* fb, uint16_t pages) { panel_send(fb, pages); }
 
-lumen::Port port;
+tixel::Port port;
 port.millis   = ms;
 port.readKeys = keys;
 port.flush    = flush;
-port.keyLayout = lumen::KeyLayout::Three;   // 三键（UP/DOWN/ENTER），默认四键
+port.keyLayout = tixel::KeyLayout::Three;   // 三键（UP/DOWN/ENTER），默认四键
 // 可选：haptic / rtcGet / settingsLoad / settingsSave / setContrast / setPower
 ```
 
 4）启动与主循环：
 
 ```cpp
-static lumen::Ui ui;
+static tixel::Ui ui;
 ui.init(port, demo::kDefaults, demo::kSettingCount);
 demo::start(ui);                 // 或 ui.start(myRootPage);
 
@@ -94,7 +94,7 @@ while (true) {
 上游以 128×64 为基准。本库的映射规则：
 
 - **纵向**（行高、间距、圆角、控件尺寸）：`scaled(v) = v × (H / 64)`，128 高即 2×；
-  代码统一用 `lumen::scaled()`，把面板高度改回 64 时布局自动回到上游数值。
+  代码统一用 `tixel::scaled()`，把面板高度改回 64 时布局自动回到上游数值。
 - **字号**：按屏宽能容纳的最大字号选取（不是简单 2×），
   例如正文 `7x13`、状态栏 `6x12`、数值 `logisoso28`、时钟 `logisoso42`、字标 `logisoso34`。
 - **横向**：边距与留白随 2× 放大，但内容宽度受 128 px 限制，
@@ -107,11 +107,11 @@ while (true) {
 ```
 $ idf.py -C examples/esp32_demo build
 Successfully created ESP32-S3 image.
-lumen_esp32_demo.bin binary size 0x35c10 bytes. Smallest app partition is 0x100000 bytes. 0xca3f0 bytes (79%) free.
+tixel_esp32_demo.bin binary size 0x35c10 bytes. Smallest app partition is 0x100000 bytes. 0xca3f0 bytes (79%) free.
 ```
 
 组件以 `-Wall -Werror`、`-std=gnu++26`、`-fno-exceptions -fno-rtti` 编译通过，
-无警告。示例工程用 `set(COMPONENTS main lumen lumen_demo)` 裁剪组件集，
+无警告。示例工程用 `set(COMPONENTS main tixel tixel_demo)` 裁剪组件集，
 不构建 mbedTLS/Wi-Fi 等无关部分。
 
 ## 6. 一致性验证
@@ -155,30 +155,30 @@ python tools/pgm2png.py build/preview/out build/preview/png 2
 
 | 类型 | 作用 |
 | --- | --- |
-| `lumen::Ui` | 页面栈、转场、电源/亮度/反色、事件分发、整帧输出 |
-| `lumen::Port` | 硬件注入：`millis / readKeys / haptic / rtcGet / settingsLoad / settingsSave / flush / setContrast / setPower / keyLayout` |
-| `lumen::Canvas` | 帧缓冲 + 浮点图元 + 裁剪/平移 + SET/CLEAR/XOR + 抖动 α + 文本 |
-| `lumen::Font` | u8g2 格式字体解码（字宽、行高、绘制） |
-| `lumen::Page` | 页面基类：`enter/resume/leave/key/update/render/focus/probe` |
-| `lumen::Overlay` | 覆盖层基类；内置 `toast / dialog / sheet` |
-| `lumen::Menu` | 数据驱动菜单：`LUMEN_ITEM_TOGGLE/OPTION/SHEET/SUBMENU/ACTION` |
-| `lumen::Spring` / `Tween` | 二阶系统 / 贝塞尔补间；`kMotions[]` 为统一动效 token |
-| `lumen::Keys` | 4 键 / 3 键手势状态机（3 键：ENTER 短按=OK、0.4s=返回、1.2s=回主页） |
-| `lumen::theme::kUi / kTiny / kMid / kBig / kLogo` | 字体角色 |
-| `lumen::scaled(v)` | 参考像素 → 当前面板像素 |
+| `tixel::Ui` | 页面栈、转场、电源/亮度/反色、事件分发、整帧输出 |
+| `tixel::Port` | 硬件注入：`millis / readKeys / haptic / rtcGet / settingsLoad / settingsSave / flush / setContrast / setPower / keyLayout` |
+| `tixel::Canvas` | 帧缓冲 + 浮点图元 + 裁剪/平移 + SET/CLEAR/XOR + 抖动 α + 文本 |
+| `tixel::Font` | u8g2 格式字体解码（字宽、行高、绘制） |
+| `tixel::Page` | 页面基类：`enter/resume/leave/key/update/render/focus/probe` |
+| `tixel::Overlay` | 覆盖层基类；内置 `toast / dialog / sheet` |
+| `tixel::Menu` | 数据驱动菜单：`TIXEL_ITEM_TOGGLE/OPTION/SHEET/SUBMENU/ACTION` |
+| `tixel::Spring` / `Tween` | 二阶系统 / 贝塞尔补间；`kMotions[]` 为统一动效 token |
+| `tixel::Keys` | 4 键 / 3 键手势状态机（3 键：ENTER 短按=OK、0.4s=返回、1.2s=回主页） |
+| `tixel::theme::kUi / kTiny / kMid / kBig / kLogo` | 字体角色 |
+| `tixel::scaled(v)` | 参考像素 → 当前面板像素 |
 
 ## 9. 已知限制
 
 - **设置不持久化**：示例 port 的 `settingsLoad` 返回 `false`，接 NVS/Flash 即可。
 - **文本按字节绘制**：与上游 `u8g2_DrawStr` 行为一致；中文需改用 UTF-8 入口并换带
   unicode 索引的字体（`Font` 已实现 unicode 查找，文本迭代目前是字节语义）。
-- **面板尺寸为编译期常量**：`LUMEN_PANEL_WIDTH/HEIGHT` 可覆盖，但更换高度后需按
+- **面板尺寸为编译期常量**：`TIXEL_PANEL_WIDTH/HEIGHT` 可覆盖，但更换高度后需按
   `docs/layout.md` 复核版式；当前只在 128×128（默认）与 128×64（测试）上验证。
 - **示例页面为英文文案**：与上游一致，未做多语言。
 - **上游 `examples/`（29 MB STM32 工程）未纳入仓库**，只在本地作为参考。
 
 ## 10. 许可
 
-- 本仓库的 C++ 实现：跟随上游 LUMEN 的 AGPL-3.0（见 `res/LUMEN/LICENSE`）。
+- 本仓库的 C++ 实现：跟随上游 TIXEL 的 AGPL-3.0（见 `res/LUMEN/LICENSE`）。
 - 字体数据来自 u8g2（BSD-2-Clause，版权 Olikraus），仅抽取本库使用的 10 个字体数组，
-  原样保留字节内容，见 `components/lumen/src/fonts_data.cpp` 与 `tools/extract_fonts.py`。
+  原样保留字节内容，见 `components/tixel/src/fonts_data.cpp` 与 `tools/extract_fonts.py`。
