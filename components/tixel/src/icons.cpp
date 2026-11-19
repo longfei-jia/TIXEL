@@ -3,6 +3,7 @@
 #include <cmath>
 
 #include "tixel/math.hpp"
+#include "tixel/motion.hpp"
 
 namespace tixel {
 namespace {
@@ -85,14 +86,33 @@ void iconAbout(Canvas& c, float cx, float cy, float s, float ph) {
     c.capsule(cx, cy - s * 0.02f, cx, cy + s * 0.26f, stroke(s) * 1.5f);
 }
 
-// Poster child of parameter interpolation: one rbox glyph whose corner radius
-// swings from half-size (circle) down to a near-square, looping with `phase`.
-// No bitmap frames - every state is a legal shape of the same primitive.
+// Poster child of boundary interpolation: four shapes written as radius
+// functions r(theta) - circle, square, diamond, four-point star - and the
+// sampled radius lerps between neighbours as `phase` advances. Every
+// intermediate state is a legal shape, no bitmap frames involved.
 void iconMorph(Canvas& c, float cx, float cy, float s, float ph) {
-    const float t = 0.5f - 0.5f * cosf(ph * kTau);
-    const float r = lerpf(s * 0.5f, s * 0.14f, t);
-    c.rbox(cx - s * 0.5f, cy - s * 0.5f, s, s, r);
-    c.disc(cx, cy, maxf(1.f, s * 0.09f));
+    const float R = s * 0.46f;
+    auto shapeR = [](int shape, float th) {
+        const float cs = fabsf(cosf(th)), sn = fabsf(sinf(th));
+        switch (shape) {
+            case 0: return 1.f;                                             // circle
+            case 1: return 0.7071f / maxf(cs, sn);                          // square
+            case 2: return 1.f / (cs + sn);                                 // diamond
+            default: return 0.62f + 0.38f * powf(fabsf(cosf(2 * th)), 3.f); // star
+        }
+    };
+    const float seg = fmodf(ph * 1.1f, 4.f);
+    const int i = static_cast<int>(seg);
+    const float t = curve(kCurveStandard, seg - static_cast<float>(i));
+    float xy[2 * 24];
+    for (int k = 0; k < 24; k++) {
+        const float th = static_cast<float>(k) * kTau / 24.f;
+        const float r = lerpf(shapeR(i, th), shapeR((i + 1) % 4, th), t) * R;
+        xy[2 * k] = cx + sinf(th) * r;
+        xy[2 * k + 1] = cy - cosf(th) * r;
+    }
+    c.poly(xy, 24);
+    c.disc(cx, cy, maxf(1.f, s * 0.08f));
 }
 
 }  // namespace tixel

@@ -263,6 +263,21 @@ int main(int argc, char** argv) {
     back();                                  // -> Animation list
     expect("Animation");
     press(tixel::Key::Next);                 // Layout -> Widget
+    press(tixel::Key::Ok);
+    frames(40);
+    expect("AnimWidget");
+    shot("anim_widget_shape");
+    press(tixel::Key::Next);                 // switch example: ring/bar
+    frames(35);
+    shot("anim_widget_ring");
+    press(tixel::Key::Next);                 // switch example: toggle/check
+    frames(35);
+    shot("anim_widget_check");
+    press(tixel::Key::Next);                 // switch example: rolling digits
+    seconds(0.9f);
+    shot("anim_widget_roll");
+    back();                                  // -> Animation list
+    expect("Animation");
     press(tixel::Key::Next);                 // Widget -> Frame
     press(tixel::Key::Ok);
     frames(30);
