@@ -56,6 +56,23 @@ project(my_ui)
 # 每个子目录当成组件去找 CMakeLists.txt，而 TIXEL 根目录没有那个文件。
 git submodule add https://gitee.com/longfei-jia/TIXEL.git third_party/TIXEL
 
+# 直接更新至git最新
+git submodule update --remote --merge third_party/TIXEL
+
+cd your_project
+
+# 1) 在子模块里取新版本
+cd third_party/TIXEL
+git fetch --tags origin
+git checkout v1.1.0        # 想要最新开发线就 git checkout master
+cd ../..
+
+# 2) 让主工程记录新的子模块指针
+git add third_party/TIXEL
+git commit -m "bump TIXEL to v1.1.0"
+git push
+
+
 # 固定版本（推荐，避免上游改动直接进入你的构建）
 git -C third_party/TIXEL checkout v1.1.0
 ```
