@@ -64,17 +64,17 @@ cd your_project
 # 1) 在子模块里取新版本
 cd third_party/TIXEL
 git fetch --tags origin
-git checkout v1.1.0        # 想要最新开发线就 git checkout master
+git checkout v1.2.0        # 想要最新开发线就 git checkout master
 cd ../..
 
 # 2) 让主工程记录新的子模块指针
 git add third_party/TIXEL
-git commit -m "bump TIXEL to v1.1.0"
+git commit -m "bump TIXEL to v1.2.0"
 git push
 
 
 # 固定版本（推荐，避免上游改动直接进入你的构建）
-git -C third_party/TIXEL checkout v1.1.0
+git -C third_party/TIXEL checkout v1.2.0
 ```
 
 一行接入 —— 工程根 `CMakeLists.txt`，在 `project()` **之前**：
@@ -99,7 +99,7 @@ include(third_party/TIXEL/tixel.cmake)
 git clone --recursive <你的工程地址>          # 首次
 git submodule update --init --recursive      # 已经 clone 过但没带子模块
 
-cd third_party/TIXEL && git checkout v1.1.0 && cd -    # 升级到新版本
+cd third_party/TIXEL && git checkout v1.2.0 && cd -    # 升级到新版本
 git add third_party/TIXEL && git commit -m "bump TIXEL"
 ```
 

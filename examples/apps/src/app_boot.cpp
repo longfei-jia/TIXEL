@@ -113,8 +113,11 @@ void Boot::render(tixel::Canvas& g) {
         const float e = lp < .5f ? 4 * lp * lp * lp
                                  : 1 - (-2 * lp + 2) * (-2 * lp + 2) * (-2 * lp + 2) / 2;
         g.rframe(bx, 56 * u, bw, 4 * u, 2 * u);
-        g.hline(bx + 1 * u, 57 * u, (bw - 2 * u) * e);
-        g.hline(bx + 1 * u, 58 * u, (bw - 2 * u) * e);
+        // Fill the frame interior solid. The upstream 128x64 frame was 4 px
+        // tall with exactly two inner rows, so its two 1 px lines *were* the
+        // fill; at 2x the interior is 6 px (4*u - 2) and the two lines left it
+        // mostly blank, reading as two stray strokes instead of a bar.
+        g.rbox(bx + 1, 56 * u + 1, (bw - 2) * e, 4 * u - 2, 1.5f * u);
     }
 }
 

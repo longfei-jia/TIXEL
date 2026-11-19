@@ -43,10 +43,22 @@ int utf8Count(const char* s) {
 }
 
 int utf8BytesFor(const char* s, int codepoints) {
+    // Byte length of the first `codepoints` codepoints. The loop must step by
+    // whole glyphs: incrementing per lead byte stopped right after it, which
+    // cut the final multi-byte character (typewriter ended on "...框", not
+    // "...框架").
     int n = 0;
     const char* p = s;
-    for (; *p && n < codepoints; p++)
-        if ((static_cast<unsigned char>(*p) & 0xC0) != 0x80) n++;
+    while (*p && n < codepoints) {
+        const unsigned char b = static_cast<unsigned char>(*p);
+        const int len = b < 0x80 ? 1
+                      : (b & 0xE0) == 0xC0 ? 2
+                      : (b & 0xF0) == 0xE0 ? 3
+                      : (b & 0xF8) == 0xF0 ? 4
+                      : 1;   // malformed lead: consume a single byte
+        p += len;
+        n++;
+    }
     return static_cast<int>(p - s);
 }
 
