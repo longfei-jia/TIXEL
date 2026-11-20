@@ -294,20 +294,17 @@ int main(int argc, char** argv) {
     // --- parallel animations (menu item 7) ---------------------------------
     press(tixel::Key::Next);                 // Animation -> Parallel
     press(tixel::Key::Ok);
-    frames(40);                              // transition done, tiles settled
+    frames(40);
     expect("AnimParallel");
-    shot("anim_parallel_pop");
-    seconds(2.0f);                           // exit finished
-    shot("anim_parallel_pop_out");
-    press(tixel::Key::Next);                 // -> slide
-    seconds(0.7f);
-    shot("anim_parallel_slide");
-    press(tixel::Key::Next);                 // -> dissolve
-    seconds(0.7f);
-    shot("anim_parallel_dissolve");
-    press(tixel::Key::Next);                 // -> scatter
-    seconds(0.7f);
-    shot("anim_parallel_scatter");
+    shot("anim_parallel_a");                 // first panel settled
+    press(tixel::Key::Next);                 // interrupt: new panel from below
+    frames(7);
+    shot("anim_parallel_mid");               // old retiring + new rising together
+    press(tixel::Key::Prev);                 // interrupt again: from the top
+    frames(7);
+    shot("anim_parallel_mid2");              // three springs at once
+    seconds(1.2f);
+    shot("anim_parallel_settled");
     back();                                  // -> Home
     expect("Home");
 

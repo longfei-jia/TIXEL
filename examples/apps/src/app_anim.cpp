@@ -319,65 +319,122 @@ const tixel::MenuItem kAnimItems[] = {
 };
 tixel::Menu sAnim("Animation", kAnimItems);
 
-// ---- parallel group: 12 tiles, one driver, all in and out together --------
+// ---- interruptible transition: panels pop in from an edge, and a new key
+// press can interrupt at any point - the old panel retires toward its own
+// edge while the new one enters, both springs running at the same time -------
+
+constexpr int kMaxPanels = 3;
 
 class AnimParallel : public tixel::Page {
 public:
-    bool key(const tixel::Event& e) override {
-        if ((e.key == tixel::Key::Prev || e.key == tixel::Key::Next) && tixel::isStep(e)) {
-            ex_ = (ex_ + (e.key == tixel::Key::Next ? 1 : -1) + 4) % 4;
-            t_ = 0;
-            s_.init(tixel::kMotionCarousel, 0.f, 1.f);
-            s_.set(0.f);
-            return true;
-        }
-        return false;
-    }
-    void enter() override { s_.init(tixel::kMotionCarousel, 0.f, 1.f); }
-    void update(float dt) override {
-        // one 4 s cycle: in (0..1.6) / hold / out (1.6..3.2) / hold
-        t_ += dt;
-        const float ph = std::fmodf(t_, 4.f);
-        s_.set(ph < 1.6f || ph >= 3.2f ? 1.f : 0.f);
-        s_.update(dt);
-    }
+    void enter() override;
+    bool key(const tixel::Event& e) override;
+    void update(float dt) override;
     void render(tixel::Canvas& g) override;
 
 private:
-    int ex_ = 0;
-    float t_ = 0;
-    tixel::Spring s_;
-};
+    struct Panel {
+        tixel::Spring s;
+        int origin = 0;   // 0 = from the top, 1 = from the bottom
+        bool alive = false;
+        bool exiting = false;
+    };
 
-const char* const kParallelNames[4] = {"Pop|弹出", "Slide|滑入", "Dissolve|溶解", "Scatter|散开"};
+    void spawn(int origin);
+
+    Panel panels_[kMaxPanels];
+};
 
 AnimParallel sAnimParallel;
 
+void AnimParallel::enter() {
+    for (auto& p : panels_) {
+        p.s.init(tixel::kMotionGentle, 0.f, 1.f);
+        p.alive = false;
+        p.exiting = false;
+    }
+    spawn(0);   // first panel drops in by itself
+}
+
+void AnimParallel::spawn(int origin) {
+    // a free slot first, otherwise the one closest to gone
+    Panel* slot = nullptr;
+    for (auto& p : panels_)
+        if (!p.alive && p.s.value < 0.01f) { slot = &p; break; }
+    if (!slot) {
+        float lowest = 2.f;
+        for (auto& p : panels_)
+            if (p.s.value < lowest) { lowest = p.s.value; slot = &p; }
+    }
+    if (!slot) return;
+    slot->alive = true;
+    slot->exiting = false;
+    slot->origin = origin;
+    slot->s.init(tixel::kMotionGentle, 0.f, 1.f);
+    slot->s.set(1.f);   // starts at 0, target 1: springs up from the edge
+}
+
+bool AnimParallel::key(const tixel::Event& e) {
+    if ((e.key == tixel::Key::Prev || e.key == tixel::Key::Next) && tixel::isStep(e)) {
+        // Interrupt: everything on screen starts retiring right now; the new
+        // panel's spring runs concurrently instead of waiting for them.
+        for (auto& p : panels_)
+            if (p.alive) {
+                p.s.set(0.f);
+                p.exiting = true;
+            }
+        spawn(e.key == tixel::Key::Prev ? 0 : 1);
+        return true;
+    }
+    return false;
+}
+
+void AnimParallel::update(float dt) {
+    for (auto& p : panels_) {
+        p.s.update(dt);
+        if (p.alive && p.exiting && p.s.value < 0.02f) p.alive = false;
+    }
+}
+
 void AnimParallel::render(tixel::Canvas& g) {
     statusBar(*ui, g, 0);
-    demoChrome(g, *ui, kParallelNames[ex_], ex_, 4);
-    const float v = s_.value;            // spring value, overshoots on purpose
-    const float c = tixel::clamp01(v);
 
-    for (int i = 0; i < 12; i++) {
-        const float bx = 36.f + static_cast<float>(i % 4) * 24.f;
-        const float by = 48.f + static_cast<float>(i / 4) * 22.f;
-        if (ex_ == 1) {                              // slide: group enters as a sheet
-            g.rbox(bx - 8.f + (1.f - c) * 150.f, by - 8.f, 16, 16, 4);
-        } else if (ex_ == 2) {                       // dissolve: fixed grid, dither alpha
-            g.setAlpha(c);
-            g.rbox(bx - 8.f, by - 8.f, 16, 16, 4);
-        } else if (ex_ == 3) {                       // scatter: fly out from the centre
-            const float x = tixel::lerpf(64.f, bx, c);
-            const float y = tixel::lerpf(72.f, by, c);
-            const float sz = 16.f * tixel::clamp01(c * 1.2f);
-            if (sz > 0.6f) g.rbox(x - sz * 0.5f, y - sz * 0.5f, sz, sz, 3);
-        } else {                                     // pop: every tile scales together
-            const float sz = 16.f * v;
-            if (sz > 0.6f) g.rbox(bx - sz * 0.5f, by - sz * 0.5f, sz, sz, sz * 0.22f);
-        }
+    // Painter order by progress: the panel closest to gone draws first, so the
+    // rising one covers it - that is what makes the two motions read as one.
+    Panel* order[kMaxPanels];
+    int n = 0;
+    // Retiring panels first (they sit underneath), rising ones last and solid:
+    // the layer follows intent, not progress - a fresh panel starts at ~0 but
+    // must still be on top.
+    for (auto& p : panels_)
+        if (p.alive && p.exiting) order[n++] = &p;
+    for (auto& p : panels_)
+        if (p.alive && !p.exiting) order[n++] = &p;
+
+    for (int i = 0; i < n; i++) {
+        const Panel& p = *order[i];
+        const float t = tixel::clamp01(p.s.value);
+        // full target = 28..114, between the title row and the hint row, so a
+        // settled panel never slices through the chrome
+        const float h = tixel::lerpf(40.f, 86.f, t);
+        const float y = p.origin == 0 ? tixel::lerpf(-40.f, 28.f, t) : 114.f - h;
+        g.setAlpha(p.exiting ? 0.5f : tixel::clamp01(t * 2.5f));   // half-dense dither = "behind"
+        g.rframe(2, y, static_cast<float>(tixel::kWidth) - 4, h, 6);
+        g.setFont(tixel::theme::kTiny);
+        g.textCenter(64, y + 6, p.origin == 0 ? tr(*ui, "from top|从上")
+                                              : tr(*ui, "from bottom|从下"));
     }
     g.setAlpha(1);
+
+    // chrome last: clear a title band first so a retiring panel's frame cannot
+    // run through the text, then draw it
+    g.setMode(tixel::Mode::Clear);
+    g.box(0, 14, static_cast<float>(tixel::kWidth), 14);
+    g.setMode(tixel::Mode::Set);
+    g.setFont(tixel::theme::kUi);
+    g.textCenter(64, 16, tr(*ui, "Parallel|并行动画"));
+    g.setFont(tixel::theme::kTiny);
+    g.textCenter(64, 116, tr(*ui, "up/dn=pop hold=back|上下键弹出 · 长按返回"));
 }
 
 }  // namespace
