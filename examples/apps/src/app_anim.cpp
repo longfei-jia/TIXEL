@@ -319,11 +319,15 @@ const tixel::MenuItem kAnimItems[] = {
 };
 tixel::Menu sAnim("Animation", kAnimItems);
 
-// ---- interruptible transition: panels pop in from an edge, and a new key
-// press can interrupt at any point - the old panel retires toward its own
-// edge while the new one enters, both springs running at the same time -------
+// ---- interruptible transition, geometry only -------------------------------
+// Prev drops one frame in from the top edge; Next pops three equally spaced
+// columns up from the bottom. Either press retires whatever is on screen
+// toward its own edge at the same time, so both springs run concurrently.
+// The spring is deliberately slow (~0.7 s to settle) - at UI speed the overlap
+// is over before the eye can register it.
 
 constexpr int kMaxPanels = 3;
+constexpr tixel::Motion kPanelMotion = tixel::motionDef(0.85f, 1.f, 0.f);
 
 class AnimParallel : public tixel::Page {
 public:
@@ -335,13 +339,12 @@ public:
 private:
     struct Panel {
         tixel::Spring s;
-        int origin = 0;   // 0 = from the top, 1 = from the bottom
+        int kind = 0;   // 0 = single frame (top), 1 = three columns (bottom)
         bool alive = false;
         bool exiting = false;
     };
 
-    void spawn(int origin);
-
+    void spawn(int kind);
     Panel panels_[kMaxPanels];
 };
 
@@ -349,15 +352,14 @@ AnimParallel sAnimParallel;
 
 void AnimParallel::enter() {
     for (auto& p : panels_) {
-        p.s.init(tixel::kMotionGentle, 0.f, 1.f);
+        p.s.initCustom(&kPanelMotion, 0.f, 1.f);
         p.alive = false;
         p.exiting = false;
     }
-    spawn(0);   // first panel drops in by itself
+    spawn(0);   // a single frame arrives by itself
 }
 
-void AnimParallel::spawn(int origin) {
-    // a free slot first, otherwise the one closest to gone
+void AnimParallel::spawn(int kind) {
     Panel* slot = nullptr;
     for (auto& p : panels_)
         if (!p.alive && p.s.value < 0.01f) { slot = &p; break; }
@@ -369,15 +371,15 @@ void AnimParallel::spawn(int origin) {
     if (!slot) return;
     slot->alive = true;
     slot->exiting = false;
-    slot->origin = origin;
-    slot->s.init(tixel::kMotionGentle, 0.f, 1.f);
-    slot->s.set(1.f);   // starts at 0, target 1: springs up from the edge
+    slot->kind = kind;
+    slot->s.initCustom(&kPanelMotion, 0.f, 1.f);
+    slot->s.set(1.f);
 }
 
 bool AnimParallel::key(const tixel::Event& e) {
     if ((e.key == tixel::Key::Prev || e.key == tixel::Key::Next) && tixel::isStep(e)) {
-        // Interrupt: everything on screen starts retiring right now; the new
-        // panel's spring runs concurrently instead of waiting for them.
+        // interrupt: everything present starts leaving right now, the new
+        // arrangement enters concurrently
         for (auto& p : panels_)
             if (p.alive) {
                 p.s.set(0.f);
@@ -397,15 +399,12 @@ void AnimParallel::update(float dt) {
 }
 
 void AnimParallel::render(tixel::Canvas& g) {
-    statusBar(*ui, g, 0);
-
-    // Painter order by progress: the panel closest to gone draws first, so the
-    // rising one covers it - that is what makes the two motions read as one.
+    // No chrome at all: the geometry is the demo, the status bar would only
+    // run its text through the frame edges.
+    // retirers underneath (half-dense dither), the arriving arrangement on
+    // top and solid - layers follow intent, not progress
     Panel* order[kMaxPanels];
     int n = 0;
-    // Retiring panels first (they sit underneath), rising ones last and solid:
-    // the layer follows intent, not progress - a fresh panel starts at ~0 but
-    // must still be on top.
     for (auto& p : panels_)
         if (p.alive && p.exiting) order[n++] = &p;
     for (auto& p : panels_)
@@ -414,27 +413,22 @@ void AnimParallel::render(tixel::Canvas& g) {
     for (int i = 0; i < n; i++) {
         const Panel& p = *order[i];
         const float t = tixel::clamp01(p.s.value);
-        // full target = 28..114, between the title row and the hint row, so a
-        // settled panel never slices through the chrome
-        const float h = tixel::lerpf(40.f, 86.f, t);
-        const float y = p.origin == 0 ? tixel::lerpf(-40.f, 28.f, t) : 114.f - h;
-        g.setAlpha(p.exiting ? 0.5f : tixel::clamp01(t * 2.5f));   // half-dense dither = "behind"
-        g.rframe(2, y, static_cast<float>(tixel::kWidth) - 4, h, 6);
-        g.setFont(tixel::theme::kTiny);
-        g.textCenter(64, y + 6, p.origin == 0 ? tr(*ui, "from top|从上")
-                                              : tr(*ui, "from bottom|从下"));
+        g.setAlpha(p.exiting ? 0.5f : tixel::clamp01(t * 2.5f));
+
+        if (p.kind == 0) {
+            // one frame, top edge sliding down while it grows to full height
+            const float h = tixel::lerpf(40.f, 124.f, t);
+            const float y = tixel::lerpf(-40.f, 2.f, t);
+            g.rframe(2, y, 124, h, 8);
+        } else {
+            // three equal columns, bottom edge pinned, rising together
+            const float h = tixel::lerpf(40.f, 124.f, t);
+            const float y = 126.f - h;
+            for (int c = 0; c < 3; c++)
+                g.rframe(4.f + static_cast<float>(c) * 44.f, y, 32, h, 6);
+        }
     }
     g.setAlpha(1);
-
-    // chrome last: clear a title band first so a retiring panel's frame cannot
-    // run through the text, then draw it
-    g.setMode(tixel::Mode::Clear);
-    g.box(0, 14, static_cast<float>(tixel::kWidth), 14);
-    g.setMode(tixel::Mode::Set);
-    g.setFont(tixel::theme::kUi);
-    g.textCenter(64, 16, tr(*ui, "Parallel|并行动画"));
-    g.setFont(tixel::theme::kTiny);
-    g.textCenter(64, 116, tr(*ui, "up/dn=pop hold=back|上下键弹出 · 长按返回"));
 }
 
 }  // namespace
