@@ -192,8 +192,11 @@ void Monitor::render(tixel::Canvas& g) {
     const float vx = static_cast<float>(tixel::kWidth - 6) - static_cast<float>(value_.width(g));
     value_.draw(g, vx, 0);
 
+    // Static grid lines: the phase used to cycle at 8 Hz, which on a 1-bit
+    // panel reads as flicker rather than a scroll. Reference lines should not
+    // move - only the curve does.
     for (int f = 1; f <= 3; f++)
-        g.dottedHLine(static_cast<float>(static_cast<int>(t_ * 8) % 4),
+        g.dottedHLine(0.f,
                       kGraphTop + kGraphH * (1 - 0.25f * static_cast<float>(f)),
                       static_cast<float>(tixel::kWidth), 2);
     const float rv = reveal_.value();
