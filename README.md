@@ -1,6 +1,6 @@
 # TIXEL C++ · 128×128 单色 UI 框架（ESP-IDF 组件）
 
-以参考实现（C99，128×64）为基准重写为 C++17，面向 128×128 单色面板：
+以 [LUMEN](https://github.com/Xulijun180/LUMEN)（C99，128×64）为基准重写为 C++17，面向 128×128 单色面板：
 页面、控件、动效、示例页面全部保留，去掉 STM32 平台代码与 u8g2 依赖，
 按 ESP-IDF 组件组织，可直接被其他工程引用。
 
@@ -175,6 +175,23 @@ python tools/pgm2png.py build/preview/out build/preview/png 2
 
 ## 9. 许可
 
-- 本仓库的 C++ 实现：AGPL-3.0，见 [LICENSE](LICENSE)（与参考实现同一许可）。
+- 本仓库的 C++ 实现：AGPL-3.0，见 [LICENSE](LICENSE)（与上游 LUMEN 同一许可）。
 - 字体数据来自 u8g2（BSD-2-Clause，版权 Olikraus），仅抽取本库使用的 10 个字体数组，
   原样保留字节内容，见 `components/tixel/src/fonts_data.cpp` 与 `tools/extract_fonts.py`。
+
+## 10. 致谢
+
+TIXEL 是 **[LUMEN](https://github.com/Xulijun180/LUMEN)** 的 C++ 版本。设计语言、
+动效体系、菜单与覆盖层模型、七个示例页面均来自该项目 —— 它用 C99 把一套完整的
+单色 UI 跑在了 128×64 的 STM32 上，本仓库是把这套思路搬到 ESP-IDF 与 128×128
+面板的移植与优化：
+
+- **语言与结构**：C99 过程式代码改为 C++17，字体解码、菜单、覆盖层、动效收敛为
+  类与编译期 token（`kMotions[]`），平台相关部分抽成 `tixel::Port`
+- **1-bit 面板适配**：4×4 Bayer 抖动 alpha、页格式帧缓冲与脏页掩码、三缓冲转场合成
+- **中文支持**：文本层改为 UTF-8 逐 codepoint 解码，接入 GB2312 字库，
+  菜单与示例文案中英双语可切换
+- **版式与示例**：按 128×128 重排全部页面（上游为 128×64 的两倍纵向映射），
+  新增动画演示页（布局级 / 组件级 / 帧级、可打断并行动画）
+
+感谢 LUMEN 作者的开源工作。
